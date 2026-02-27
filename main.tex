@@ -1,14 +1,66 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
+\documentclass[12pt,a4paper,faculty=ea,language=nl]{ugent-doc}
 
-\title{Mijn eerste LaTeX document}
-\author{Naam}
-\date{\today}
+\usepackage{todonotes}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=black,
+    linkcolor=black,
+    citecolor=black
+}
+
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+
+\usepackage{float}
+
+\usepackage{amsmath}
+
+\usepackage{amsthm}
+
+\usepackage{amssymb}
+
+\renewcommand{\contentsname}{Inhoud}
+\renewcommand{\figurename}{Figuur}
+
+\setlength{\parindent}{0pt}
+
+\thetitle{\color{ugentblue}Profileren van meerdradige applicaties met PICS}
+
+\infoboxa{\bfseries\large Vakoverschrijdend Project}
+
+\infoboxb{Promotor: 
+\begin{tabular}[t]{l}
+    Prof.\ Dr.\ Ir.\ Lieven Eeckhout\\
+\end{tabular}
+\\[0.5em]
+Begeleiders:
+\begin{tabular}[t]{l}
+    Ge Liu\\
+    Jaime Roelandts\\
+\end{tabular}
+}
+
+\infoboxc{Studenten: 
+\begin{tabular}[t]{lll}
+    Tobe De Brabander & \href{mailto:tobe.debrabander@ugent.be}{tobe.debrabander@ugent.be}
+    \\
+    Jaco Lagrange & \href{mailto:jaco.lagrange@ugent.be}{jaco.lagrange@ugent.be}\\
+    Louis Verstraeten & \href{mailto:louis.verstraeten@ugent.be}{louis.verstraeten@ugent.be}
+\end{tabular}
+}
+
+\infoboxd{Academiejaar: 2025--2026}
 
 \begin{document}
-
 \maketitle
 
-Hallo wereld!
+{\hypersetup{hidelinks}\tableofcontents} 
+\newpage
+
+\section{Inleiding}
+\section{Technische bespreking}
+\section{Projectmatige aanpak}
 
 \end{document}
