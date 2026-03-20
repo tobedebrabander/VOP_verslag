@@ -59,9 +59,17 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-\todo[inline]{Probleemschetsing in brede context; Algemeen profileren, Tijdsproporitioneel, correcte assignatie van cycli (allemaal zeer algmeen later nog herhaling over dus geen probleem)}
+Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties met behulp van de Sniper-simulator \cite{sniper}. In het bijzonder onderzoeken wij hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
+  
+\subsection{Tijdsproportioneel}
+In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli aan statische instructies van groot belang (hierna kortweg instructies genoemd, tenzij anders vermeld). Het is cruciaal dat deze profileringsinfomatie tijdsproportioneel is: het belang van een instructie in het uiteindelijke profiel moet evenredig zijn aan de relatieve bijdrage van die instructie aan de totale uitvoeringstijd. Dit vereist een nauwkeurige toewijzing — zonder cycli toe te kennen aan instructies die niet hebben bijgedragen aan de uitvoeringstijd, en zonder cycli te onthouden aan instructies die dat wel hebben gedaan.
+\subsection{Correcte assignatie}
+Naast een correcte toewijzing van cycli aan instructies is het eveneens van belang te begrijpen waardoor die cycli worden veroorzaakt. Per instructie dient duidelijk te zijn of de bijbehorende cycli het gevolg zijn van bijvoorbeeld een cache-misser, een branch-voorspellingsfout, een resource-conflict, of een andere oorzaak. Dit inzicht is waardevol omdat het de onderliggende oorzaken van prestatieproblemen blootlegt en ontwikkelaars in staat stelt gerichte optimalisatiemogelijkheden te identificeren.
+\subsection{Per instruction cycle stacks}
+\todo[inline]{PICS uitleggen in het kort, want dat is uiteraard het probleem dat we willen oplossen}
 \section{Doelstellingen}
 \todo[inline]{Uitleggen wat we analyseren, kort uitleggen wat we willen bereiken ten gevolge van het lezen van wat er al is (PICS die al geimplementeerd zijn, en andere profileringstechnieken), wij willen dit op sniper doen, hier dan ev nog extra puntje over sniper of verwijzing naar apendix waar we blad of 2 over sniper praten en in grote lijnen uitleggen dan het bv een event based simulator is dus dat  cycli tellen anders zal verlopen etc (apendix miss beter om te doen want dan kunnen we er eevnoudig opnieuw later naar verwijzen)}
+
 \section{Planning}
 \todo[inline]{planning, dus eerst dips dan commit, er tussen al eens benchmarks etc, dit moet via Gantt chartt ding (geen idee ma staat zo in opgave)}
 \section{Technische bespreking}
