@@ -22,10 +22,10 @@ main:
 # 0 "" 2
 #NO_APP
 	movq	%rax, -24(%rbp)
-	movl	$0, -8(%rbp) #-8(%rbp) = i
+	movl	$0, -8(%rbp)
 	jmp	.L2
 .L3:
-	addl	$1, -4(%rbp) #-4(%rbp) = a
+	addl	$1, -4(%rbp)
 	addl	$1, -8(%rbp)
 .L2:
 	cmpl	$2, -8(%rbp)

@@ -4,7 +4,7 @@
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 0 "<command-line>" 2
 # 1 "loopbench.c"
-# 1 "common.h" 1
+# 1 "../common.h" 1
 
 
 
@@ -242,10 +242,10 @@ extern size_t wcstombs (char *__restrict __s,
 # 1156 "/usr/include/stdlib.h" 2 3 4
 # 1167 "/usr/include/stdlib.h" 3 4
 
-# 6 "common.h" 2
-# 1 "sim_api.h" 1
-# 7 "common.h" 2
-# 40 "common.h"
+# 6 "../common.h" 2
+# 1 "../sim_api.h" 1
+# 7 "../common.h" 2
+# 40 "../common.h"
 # 1 "/usr/include/time.h" 1 3 4
 # 29 "/usr/include/time.h" 3 4
 # 1 "/usr/lib/gcc/x86_64-linux-gnu/14/include/stddef.h" 1 3 4
@@ -472,12 +472,12 @@ extern int __daylight;
 extern long int __timezone;
 # 452 "/usr/include/time.h" 3 4
 
-# 41 "common.h" 2
+# 41 "../common.h" 2
 
 
 
 
-# 44 "common.h"
+# 44 "../common.h"
 typedef unsigned long long ticks;
 static inline __attribute__((always_inline)) ticks _ClockGetTime()
 {
