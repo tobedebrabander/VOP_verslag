@@ -30,7 +30,7 @@
 
 \infoboxa{\bfseries\large Project in het kader van  het Vakoverschrijdend Project, Groep X}
 
-\infoboxb{Promotor: 
+\infoboxb{Promotor:
 \begin{tabular}[t]{l}
     Prof.\ Dr.\ Ir.\ Lieven Eeckhout\\
 \end{tabular}
@@ -42,7 +42,7 @@ Begeleiders:
 \end{tabular}
 }
 
-\infoboxc{Studenten: 
+\infoboxc{Studenten:
 \begin{tabular}[t]{lll}
     Tobe De Brabander & \href{mailto:tobe.debrabander@ugent.be}{tobe.debrabander@ugent.be}\\
     Jaco Lagrange & \href{mailto:jaco.lagrange@ugent.be}{jaco.lagrange@ugent.be}\\
@@ -55,13 +55,20 @@ Begeleiders:
 \begin{document}
 \maketitle
 
-{\hypersetup{hidelinks}\tableofcontents} 
+{\hypersetup{hidelinks}\tableofcontents}
 \newpage
 
 \section{Inleiding}
 Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties met behulp van de Sniper-simulator \cite{sniper}. In het bijzonder onderzoeken wij hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
+
 \newpage
+
+
 \section{Context}
+Dit project kadert in eerder uitgevoerd academisch onderzoek en breidt reeds bestaande software uit. Deze worden in hier eerst toegelicht.
+
+\subsection{Onderzoek}
+Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. In hun paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} wordt 
 
 
 
@@ -78,7 +85,7 @@ Naast een correcte toewijzing van cycli aan instructies is het eveneens van bela
 \section{Planning}
 \todo[inline]{planning, dus eerst dips dan commit, er tussen al eens benchmarks etc, dit moet via Gantt chartt ding (geen idee ma staat zo in opgave)}
 \section{Technische bespreking}
-\todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.} 
+\todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
 \section{Resultaten}
 \todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel dispatch als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
 \section{Reflectie}
@@ -86,6 +93,18 @@ Naast een correcte toewijzing van cycli aan instructies is het eveneens van bela
 \section{Openstaande problemen}
 \todo[inline]{Zien we nog wel}
 \section{Besluit}
-\section{Bronvermelding}
+
+
+\newpage
+
+
+\renewcommand{\refname}{Referenties}
+\begin{thebibliography}{9}
+\bibitem{dip2026}
+    Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch \newline
+    Silvio Campelo de Santana, Joseph Rogers, Lieven Eeckhout, Magnus Jahre \newline
+    ASPLOS 2026 \newline
+
+\end{thebibliography}
 
 \end{document}
