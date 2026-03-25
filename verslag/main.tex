@@ -59,18 +59,17 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties met behulp van de Sniper-simulator \cite{sniper}. In het bijzonder onderzoeken wij hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
+Het afnemende tempo van Moore's law en Dennard scaling, gecombineerd met een aanhoudende vraag naar steeds performantere applicaties,
+heeft de nood aan betere softwareprestaties aanzienlijk doen toenemen. Deze verbeteringen worden vandaag voornamelijk gerealiseerd
+door het inzetten van gespecialiseerde hardware-acceleratoren, die het mogelijk maken om het aanwezige parallelisme in programma's maximaal te benutten.
 
-\newpage
+Volgens Amdahl's law neemt echter het relatieve belang van CPU-prestaties toe naarmate een groter deel van de code niet kan worden versneld via dergelijke acceleratoren.
+Met de toenemende adoptie en mogelijkheden van deze hardware groeit dus ook de impact van niet-versnelbare code op de totale performantie van een applicatie.
+Dit impliceert dat softwareontwikkelaars in de toekomst steeds meer aandacht zullen moeten besteden aan het optimaliseren van CPU-prestaties.
 
-
-\section{Context}
-Dit project kadert in eerder uitgevoerd academisch onderzoek en breidt reeds bestaande software uit. Deze worden in hier eerst toegelicht.
-
-\subsection{Onderzoek}
-Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. In hun paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} wordt 
-
-
+In dit project richten wij ons op het profileren van meerdradige applicaties met behulp van de Sniper simulator.
+Deze simulator stelt ontwikkelaars in staat om een gedetailleerd prestatieprofiel van een applicatie op te stellen, wat gerichte optimalisaties mogelijk maakt.
+In het bijzonder onderzoeken wij hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere threads — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
 
 \subsection{Tijdsproportioneel}
 In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli aan statische instructies van groot belang (hierna kortweg instructies genoemd, tenzij anders vermeld). Het is cruciaal dat deze profileringsinfomatie tijdsproportioneel is: het belang van een instructie in het uiteindelijke profiel moet evenredig zijn aan de relatieve bijdrage van die instructie aan de totale uitvoeringstijd. Dit vereist een nauwkeurige toewijzing — zonder cycli toe te kennen aan instructies die niet hebben bijgedragen aan de uitvoeringstijd, en zonder cycli te onthouden aan instructies die dat wel hebben gedaan.
@@ -113,7 +112,7 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
 \begin{itemize}
     \item Dispatch: Het moment waarop een instructie wordt gedispatched, wat betekent dat deze klaar is om te worden uitgevoerd, het kan eventueel dat de instructie dan nog moet wachten op bepaalde resources.
     \item Commit: Het moment waarop de resultaten van een instructie definitief worden gemaakt, wat betekent dat de instructie volledig is uitgevoerd en de effecten ervan zichtbaar zijn in het systeem.
-    \item PICS (Per Instruction Cycle Stacks): 
-    \item Sniper-simulator: 
+    \item PICS (Per Instruction Cycle Stacks):
+    \item Sniper-simulator:
 \end{itemize}
 \end{document}
