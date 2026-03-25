@@ -13,4 +13,4 @@ parser.add_argument('-t', '--title')
 args = parser.parse_args()
 
 data = DipData(args.db_file)
-plot_dips(n_hottest_dips(int(args.amount), data), args.title, 'out/' + args.title)
+plot_dips(n_hottest_dips(int(args.amount), data), args.title, 'VOP_verslag/viz/out_noop/' + args.title)
