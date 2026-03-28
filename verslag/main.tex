@@ -92,14 +92,36 @@ Naast een correcte toewijzing van cycli aan instructies is het eveneens van bela
 
 
 \section{Doelstellingen}
-Zoals eerder vermeld bestaan er reeds verschillende profileringsmethoden die informatie kunnen genereren over de prestaties van applicaties, maar deze voldoen niet altijd tegelijkertijd aan beide vereisten. Daarnaast is het duidelijk dat profileren zowel bij dispatch als bij commit belangrijk is, aangezien dit vaak een complementair beeld oplevert.
+Zoals eerder vermeld bestaan er reeds verschillende profileringsmethoden die informatie kunnen genereren over de prestaties van applicaties, maar deze voldoen niet altijd tegelijkertijd aan beide vereisten voor een goede profileringsmethode (Tijdsproportioneel en Correcte assignatie). Daarnaast is het duidelijk dat profileren zowel bij dispatch als bij commit belangrijk is, aangezien dit vaak een complementair beeld oplevert.
 Het doel van dit project is dan ook om PICS te implementeren op beide momenten binnen de Sniper-simulator, en dit te valideren aan de hand van gerichte benchmarktests. De geïmplementeerde methoden zullen vervolgens worden geëvalueerd en bijgestuurd op basis van verkregen resultaten.
+
+
 \section{Planning}
 \todo[inline]{planning, dus eerst dips dan commit, er tussen al eens benchmarks etc, dit moet via Gantt chartt ding (geen idee ma staat zo in opgave)}
+
+
 \section{Technische bespreking}
+
+\subsection{PICS bij \textit{dispatch}}
+\subsubsection{\textit{dispatch} toestanden}
+Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Algemeen kunnen deze eenvoudig onderscheiden worden. Het zal blijken dat dit in de \textit{Sniper-simulator} anders zal werken, maar het is belangrijk om deze situaties eerst te begrijpen voordat er dieper in gegaan wordt op de implementatie in de simulator. De vier situaties zijn:
+\begin{itemize}
+    \item \textbf{Base}: Er treden geen problemen op, alle \textit{dynamische µops} worden gedispatched in 1 cyclus en we atrribueren 1/\textit{dispatch breedte} cycli aan de instructies waarvan deze µops afkomstig zijn.
+    \item \textbf{Front end stall}: Dit kan het gevolg zijn van een instructie cache-misser, een TLB-misser, ... . Dit zal als gevolg hebben dat niet alle \textit{dispatch slots} worden gebruikt en er dus minder µops worden gedispatched. Na deze cyclus kan het dan dat er nog een aantal cycli helemaal geen µops worden gedispatched ten gevolge van deze stall. Al deze verloren cycli zullen moeten worden toegewezen aan de instructie horend bij de eerst volgende µop die dus de stall veroorzaakt heeft. Dit betekent zowel de cycli waar er niks gedispatched werd als het deel van de cyclus waar er wel µops gedispatched werden maar er minder waren dan de \textit{dispatch breedte}.
+    \item \textbf{Back end stall}: Dit betekend dat een µop niet kan dispatchen omdat er teveel µops bezig zijn in de back end. Dit kan bijvoorbeeld als gevolg hebben dat de ROB vol zit, of een functionele unit bezet is, ... . In dit geval zal de huidige cylcus opgedeelt worden in een deel waar er wel µops worden gedispatched en een deel waar er geen µops worden gedispatched. Alle cycli waar er geen µops worden gedispatched zullen moeten worden toegewezen aan de instructie horend bij de µop die de stall veroorzaakt heeft, dit is dus de eerst µop die niet kon dispatchen. 
+    \todo[inline]{hoezo niet de µop die als laatste wel kon dispatchen?}
+    De cycli daarna tot wanneer er terug kan gedispatcht worden zullen ook opneiuw worden toegewezen aan deze instructie.
+
+    \item \textbf{Misprediction}: Als laatste kan het ook dat er een foute voorspelling is gedaan waardoor er opnieuw cycli verloren gaan. In dit geval zijn er drie zaken waarmee rekening moet worden gehouden, in elk van de drie gevallen worden de cycli toegewezen aan de instructie die de voorspelling veroorzaakte. Ten eerste moeten de cycli die verloren gaan door het uitvoeren van het foute pad worden toegewezen, ten tweede moeten de cycli die verloren gaan door het \textit{flushen} van de buffers en queues worden toegewezen, en als laatste zoals altijd moeten ook de cycli die verloren gaan doordat er minder µops worden gedispatched worden toegewezen aan deze instructie.
+
+\end{itemize}
+\subsubsection{Latency}
+Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies.
+
+
 \todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
 \section{Resultaten}
-\todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel dispatch als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
+\todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel \textit{dispatch} als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
 \section{Reflectie}
 \todo[inline]{(dit moet) reflectie op de samenwerking etc of we anders hadden kunnen aanpakken...}
 \section{Openstaande problemen}
