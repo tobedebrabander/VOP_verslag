@@ -59,7 +59,18 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties in de Sniper-simulator \cite{sniper}. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Daarnaast wordt de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
+Het afnemende tempo van Moore's law en Dennard scaling, gecombineerd met een aanhoudende vraag naar steeds performantere applicaties,
+heeft de nood aan betere softwareprestaties aanzienlijk doen toenemen. Deze verbeteringen worden vandaag voornamelijk gerealiseerd
+door het inzetten van gespecialiseerde hardware-acceleratoren, die het mogelijk maken om het aanwezige parallelisme in programma's maximaal te benutten.
+
+Volgens Amdahl's law neemt echter het relatieve belang van CPU-prestaties toe naarmate een groter deel van de code niet kan worden versneld via dergelijke acceleratoren.
+Met de toenemende adoptie en mogelijkheden van deze hardware groeit dus ook de impact van niet-versnelbare code op de totale performantie van een applicatie.
+Dit impliceert dat softwareontwikkelaars in de toekomst steeds meer aandacht zullen moeten besteden aan het optimaliseren van CPU-prestaties.
+
+In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator.
+Deze simulator stelt ontwikkelaars in staat om een gedetailleerd prestatieprofiel van een applicatie op te stellen, wat gerichte optimalisaties mogelijk maakt.
+Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Daarnaast wordt de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere threads — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
+
 
 \newpage
 
@@ -78,28 +89,40 @@ In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli a
 
 \subsubsection{Correcte assignatie}
 Naast een correcte toewijzing van cycli aan instructies is het eveneens van belang te begrijpen waardoor die cycli worden veroorzaakt. Per instructie dient duidelijk te zijn of de bijbehorende cycli het gevolg zijn van bijvoorbeeld een cache-misser, een branch-voorspellingsfout, een resource-conflict, of een andere oorzaak. Dit inzicht is waardevol omdat het de onderliggende oorzaken van prestatieproblemen blootlegt en ontwikkelaars in staat stelt gerichte optimalisatiemogelijkheden te identificeren.
-
-
-
-\subsection{Sniper-simulator}
-De Sniper-simulator is een softwaregebaseerde simulator voor de \textit{x86 architectuur} die parallele programma's kan simuleren. De simulator probeert de afweging te maken tussen simulatiesnelheid en nauwkeurigheid. Hoe men deze afweging maakt, wordt nu verder toegelicht.
-
-\subsubsection{Interval Simulatie}
-Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moeten gebeuren. Dit zou echter ten koste gaan van de simulatiesnelheid, wat het praktisch gebruik niet werkbaar zou maken. Eén van de technieken om beiden te combiner is \textit{Interval simulatie}. De uitvoering van een programma door een processorkern kan gezien worden als een stroom van instructies die onderbroken wordt door \textit{miss events} zoals \textit{cache misses}, \textit{foutieve sprongvoorspellingen}, etc. De simulator kan dus werken op een hoger abstractieniveau door tussen deze \textit{miss events} te springen en ertussen een constante stroom van instructies aan te nemen. Alhoewel deze techniek de eerder vermelde voordelen heeft, bemoeilijkt het de implementatie van \textit{PICS}'s.
-
-
-\newpage
-
+\subsection{Per instruction cycle stacks}
+\todo[inline]{PICS uitleggen in het kort, want dat is uiteraard het probleem dat we willen oplossen}
 
 \section{Doelstellingen}
-\todo[inline]{Uitleggen wat we analyseren, kort uitleggen wat we willen bereiken ten gevolge van het lezen van wat er al is (PICS die al geimplementeerd zijn, en andere profileringstechnieken), wij willen dit op sniper doen, hier dan ev nog extra puntje over sniper of verwijzing naar apendix waar we blad of 2 over sniper praten en in grote lijnen uitleggen dan het bv een event based simulator is dus dat  cycli tellen anders zal verlopen etc (apendix miss beter om te doen want dan kunnen we er eevnoudig opnieuw later naar verwijzen)}
+Zoals eerder vermeld bestaan er reeds verschillende profileringsmethoden die informatie kunnen genereren over de prestaties van applicaties, maar deze voldoen niet altijd tegelijkertijd aan beide vereisten voor een goede profileringsmethode (Tijdsproportioneel en Correcte assignatie). Daarnaast is het duidelijk dat profileren zowel bij dispatch als bij commit belangrijk is, aangezien dit vaak een complementair beeld oplevert.
+Het doel van dit project is dan ook om PICS te implementeren op beide momenten binnen de Sniper-simulator, en dit te valideren aan de hand van gerichte benchmarktests. De geïmplementeerde methoden zullen vervolgens worden geëvalueerd en bijgestuurd op basis van verkregen resultaten.
+
 
 \section{Planning}
 \todo[inline]{planning, dus eerst dips dan commit, er tussen al eens benchmarks etc, dit moet via Gantt chartt ding (geen idee ma staat zo in opgave)}
+
+
 \section{Technische bespreking}
+
+\subsection{PICS bij \textit{dispatch}}
+\subsubsection{\textit{dispatch} toestanden}
+Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Algemeen kunnen deze eenvoudig onderscheiden worden. Het zal blijken dat dit in de \textit{Sniper-simulator} anders zal werken, maar het is belangrijk om deze situaties eerst te begrijpen voordat er dieper in gegaan wordt op de implementatie in de simulator. De vier situaties zijn:
+\begin{itemize}
+    \item \textbf{Base}: Er treden geen problemen op, alle \textit{dynamische µops} worden gedispatched in 1 cyclus en we atrribueren 1/\textit{dispatch breedte} cycli aan de instructies waarvan deze µops afkomstig zijn.
+    \item \textbf{Front end stall}: Dit kan het gevolg zijn van een instructie cache-misser, een TLB-misser, ... . Dit zal als gevolg hebben dat niet alle \textit{dispatch slots} worden gebruikt en er dus minder µops worden gedispatched. Na deze cyclus kan het dan dat er nog een aantal cycli helemaal geen µops worden gedispatched ten gevolge van deze stall. Al deze verloren cycli zullen moeten worden toegewezen aan de instructie horend bij de eerst volgende µop die dus de stall veroorzaakt heeft. Dit betekent zowel de cycli waar er niks gedispatched werd als het deel van de cyclus waar er wel µops gedispatched werden maar er minder waren dan de \textit{dispatch breedte}.
+    \item \textbf{Back end stall}: Dit betekend dat een µop niet kan dispatchen omdat er teveel µops bezig zijn in de back end. Dit kan bijvoorbeeld als gevolg hebben dat de ROB vol zit, of een functionele unit bezet is, ... . In dit geval zal de huidige cylcus opgedeelt worden in een deel waar er wel µops worden gedispatched en een deel waar er geen µops worden gedispatched. Alle cycli waar er geen µops worden gedispatched zullen moeten worden toegewezen aan de instructie horend bij de µop die de stall veroorzaakt heeft, dit is dus de eerst µop die niet kon dispatchen.
+    \todo[inline]{hoezo niet de µop die als laatste wel kon dispatchen?}
+    De cycli daarna tot wanneer er terug kan gedispatcht worden zullen ook opneiuw worden toegewezen aan deze instructie.
+
+    \item \textbf{Misprediction}: Als laatste kan het ook dat er een foute voorspelling is gedaan waardoor er opnieuw cycli verloren gaan. In dit geval zijn er drie zaken waarmee rekening moet worden gehouden, in elk van de drie gevallen worden de cycli toegewezen aan de instructie die de voorspelling veroorzaakte. Ten eerste moeten de cycli die verloren gaan door het uitvoeren van het foute pad worden toegewezen, ten tweede moeten de cycli die verloren gaan door het \textit{flushen} van de buffers en queues worden toegewezen, en als laatste zoals altijd moeten ook de cycli die verloren gaan doordat er minder µops worden gedispatched worden toegewezen aan deze instructie.
+
+\end{itemize}
+\subsubsection{Latency}
+Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
+
+
 \todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
 \section{Resultaten}
-\todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel dispatch als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
+\todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel \textit{dispatch} als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
 \section{Reflectie}
 \todo[inline]{(dit moet) reflectie op de samenwerking etc of we anders hadden kunnen aanpakken...}
 \section{Openstaande problemen}
@@ -124,4 +147,13 @@ Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moete
 
 \end{thebibliography}
 
+\appendix
+\section{Terminologie}
+
+\begin{itemize}
+    \item Dispatch: Het moment waarop een instructie wordt gedispatched, wat betekent dat deze klaar is om te worden uitgevoerd, het kan eventueel dat de instructie dan nog moet wachten op bepaalde resources.
+    \item Commit: Het moment waarop de resultaten van een instructie definitief worden gemaakt, wat betekent dat de instructie volledig is uitgevoerd en de effecten ervan zichtbaar zijn in het systeem.
+    \item PICS (Per Instruction Cycle Stacks):
+    \item Sniper-simulator:
+\end{itemize}
 \end{document}
