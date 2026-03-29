@@ -28,7 +28,7 @@
 
 \thetitle{\color{ugentblue}Profileren van meerdradige applicaties met PICS}
 
-\infoboxa{\bfseries\large Project in het kader van  het Vakoverschrijdend Project, Groep X}
+\infoboxa{\bfseries\large Project in het kader van  het Vakoverschrijdend Project, Groep BC01}
 
 \infoboxb{Promotor:
 \begin{tabular}[t]{l}
@@ -59,25 +59,37 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties met behulp van de Sniper-simulator \cite{sniper}. In het bijzonder onderzoeken wij hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
+Het profileren van applicaties vormt een essentieel onderdeel van softwareoptimalisatie. Door inzicht te verkrijgen in het prestatieprofiel van een applicatie kunnen ontwikkelaars gericht optimalisaties doorvoeren. Dit project richt zich op het profileren van meerdradige applicaties in de Sniper-simulator \cite{sniper}. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Daarnaast wordt de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinfomatie kan worden gegenereerd voor applicaties die draaien op zowel enkele als meerdere threads — tot in de honderden — om zo inzicht te krijgen in de prestatiekarakteristieken op zowel thread- als applicatieniveau.
 
 \newpage
 
 
 \section{Context}
-Dit project kadert in eerder uitgevoerd academisch onderzoek en breidt reeds bestaande software uit. Deze worden in hier eerst toegelicht.
+In deze sectie worden er meer details uiteengezet over de theorie achter het project en de gebruikte software. Concreet zullen de belangrijkste aspecten van de theorie achter \textit{PICS} toegelicht worden, waarna ook enkele details over de Sniper-simulator.
 
 \subsection{Onderzoek}
-Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. In hun paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} wordt 
+Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. Hun paper, \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026}, introduceert de \textit{Per Instruction Cycle Stacks (PICS)}.
 
+\subsubsection{Per Instruction Cycle Stacks (PICS)}
+\textit{PICS} vizualiseren de prestatie van computerapplicaties op een gekozen \textit{microarchitectuur}. Het kernidee is dat elke cyclus die een core spendeert aan het uitvoeren van een programma geattribueerd worden aan de correcte \textit{statische instructie} uit de programmacode. Het is dit correct attribueren dat aandacht vereist om een zivolle methode te zijn.
 
-
-\subsection{Tijdsproportioneel}
+\subsubsection{Tijdsproportioneel}
 In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli aan statische instructies van groot belang (hierna kortweg instructies genoemd, tenzij anders vermeld). Het is cruciaal dat deze profileringsinfomatie tijdsproportioneel is: het belang van een instructie in het uiteindelijke profiel moet evenredig zijn aan de relatieve bijdrage van die instructie aan de totale uitvoeringstijd. Dit vereist een nauwkeurige toewijzing — zonder cycli toe te kennen aan instructies die niet hebben bijgedragen aan de uitvoeringstijd, en zonder cycli te onthouden aan instructies die dat wel hebben gedaan.
-\subsection{Correcte assignatie}
+
+\subsubsection{Correcte assignatie}
 Naast een correcte toewijzing van cycli aan instructies is het eveneens van belang te begrijpen waardoor die cycli worden veroorzaakt. Per instructie dient duidelijk te zijn of de bijbehorende cycli het gevolg zijn van bijvoorbeeld een cache-misser, een branch-voorspellingsfout, een resource-conflict, of een andere oorzaak. Dit inzicht is waardevol omdat het de onderliggende oorzaken van prestatieproblemen blootlegt en ontwikkelaars in staat stelt gerichte optimalisatiemogelijkheden te identificeren.
-\subsection{Per instruction cycle stacks}
-\todo[inline]{PICS uitleggen in het kort, want dat is uiteraard het probleem dat we willen oplossen}
+
+
+
+\subsection{Sniper-simulator}
+De Sniper-simulator is een softwaregebaseerde simulator voor de \textit{x86 architectuur} die parallele programma's kan simuleren. De simulator probeert de afweging te maken tussen simulatiesnelheid en nauwkeurigheid. Hoe men deze afweging maakt, wordt nu verder toegelicht.
+
+\subsubsection{Interval Simulatie}
+Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moeten gebeuren. Dit zou echter ten koste gaan van de simulatiesnelheid, wat het praktisch gebruik niet werkbaar zou maken. Eén van de technieken om beiden te combiner is \textit{Interval simulatie}. De uitvoering van een programma door een processorkern kan gezien worden als een stroom van instructies die onderbroken wordt door \textit{miss events} zoals \textit{cache misses}, \textit{foutieve sprongvoorspellingen}, etc. De simulator kan dus werken op een hoger abstractieniveau door tussen deze \textit{miss events} te springen en ertussen een constante stroom van instructies aan te nemen. Alhoewel deze techniek de eerder vermelde voordelen heeft, bemoeilijkt het de implementatie van \textit{PICS}'s.
+
+
+\newpage
+
 
 \section{Doelstellingen}
 \todo[inline]{Uitleggen wat we analyseren, kort uitleggen wat we willen bereiken ten gevolge van het lezen van wat er al is (PICS die al geimplementeerd zijn, en andere profileringstechnieken), wij willen dit op sniper doen, hier dan ev nog extra puntje over sniper of verwijzing naar apendix waar we blad of 2 over sniper praten en in grote lijnen uitleggen dan het bv een event based simulator is dus dat  cycli tellen anders zal verlopen etc (apendix miss beter om te doen want dan kunnen we er eevnoudig opnieuw later naar verwijzen)}
@@ -91,7 +103,7 @@ Naast een correcte toewijzing van cycli aan instructies is het eveneens van bela
 \section{Reflectie}
 \todo[inline]{(dit moet) reflectie op de samenwerking etc of we anders hadden kunnen aanpakken...}
 \section{Openstaande problemen}
-\todo[inline]{Zien we nog wel}
+\
 \section{Besluit}
 
 
@@ -100,10 +112,15 @@ Naast een correcte toewijzing van cycli aan instructies is het eveneens van bela
 
 \renewcommand{\refname}{Referenties}
 \begin{thebibliography}{9}
+\bibitem{sniper}
+    The Sniper Multi-Corew Simulator \newline
+    \url{https://snipersim.org}
+
 \bibitem{dip2026}
     Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch \newline
     Silvio Campelo de Santana, Joseph Rogers, Lieven Eeckhout, Magnus Jahre \newline
     ASPLOS 2026 \newline
+    \url{https://jahre.folk.ntnu.no/papers/dip-asplos26-aam.pdf}
 
 \end{thebibliography}
 
