@@ -2,9 +2,13 @@
 
 \usepackage{todonotes}
 
+\usepackage{xurl}
+\usepackage{microtype}
+
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
+    breaklinks=true,
     urlcolor=black,
     linkcolor=black,
     citecolor=black
@@ -150,15 +154,36 @@ Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de
     ASPLOS 2026 \newline
     \url{https://jahre.folk.ntnu.no/papers/dip-asplos26-aam.pdf}
 
+\bibitem{x86-instructieset}
+    (2022, 30 oktober). x86-instructieset. \newline
+    \url{https://nl.wikipedia.org/wiki/X86-instructieset}
+
+\bibitem{AMD64}
+    (2020, 25 juli). AMD64. Wikipedia. \newline
+    \url{https://nl.wikipedia.org/wiki/AMD64}
 \end{thebibliography}
 
 \appendix
 \section{Terminologie}
 
 \begin{itemize}
-    \item Dispatch: Het moment waarop een instructie wordt gedispatched, wat betekent dat deze klaar is om te worden uitgevoerd, het kan eventueel dat de instructie dan nog moet wachten op bepaalde resources.
-    \item Commit: Het moment waarop de resultaten van een instructie definitief worden gemaakt, wat betekent dat de instructie volledig is uitgevoerd en de effecten ervan zichtbaar zijn in het systeem.
-    \item PICS (Per Instruction Cycle Stacks):
-    \item Sniper-simulator:
+    \item x86 architectuur: De breed gedragen instructieset-architectuur (ISA), oorspronkelijk geïntroduceerd door Intel en later uitgebreid naar 64-bit (x86-64) door AMD. Deze architectuur vormt de basis voor het merendeel van de hedendaagse pc's en servers. Het definieert de fundamentele instructies die een compatibele processor kan begrijpen en uitvoeren. \cite{x86-instructieset} \cite{AMD64}
+    \item Microarchitectuur: De specifieke hardwarematige implementatie van een instructieset-architectuur. Terwijl de ISA bepaalt wélke operaties een processor ondersteunt, specificeert de microarchitectuur hoe deze efficiënt worden gerealiseerd (bijv. de cache-grootte of het aantal functionele units).
+    \item Statische instructie: Een gestandaardiseerde instructie zoals deze is opgeslagen in de gecompileerde binaire code van een programma. Het representeert de code op een vaste geheugenlocatie, onafhankelijk van het aantal keren dat deze instructie tijdens de uitvoering (dynamisch) wordt doorlopen. In dit verslag zal de term 'instructie' worden gebruikt om te verwijzen naar een statische instructie, tenzij anders vermeld.
+    \item Dynamische µop (micro-op): Een elementaire, laagniveau instructie. Complexe x86-instructies worden intern in de processor gedecodeerd in één of meerdere eenvoudigere µops, zodat deze uniform en met hoge efficiëntie door de executiepijplijn kunnen worden verwerkt. In dit verslag zal de term 'µop' worden gebruikt om te verwijzen naar een dynamische micro-op, tenzij anders vermeld.
+    \item Out-of-order execution: Een techniek waarbij een processor instructies uitvoert zodra hun operanden en de nodige hardware-resources beschikbaar zijn, onafhankelijk van de sequentiële programmavolgorde. Dit minimaliseert onnodige stalls die ontstaan bij het wachten op data uit bijvoorbeeld het geheugen.
+    \item Re-order buffer (ROB): Een kritische hardwarebuffer binnen de processor die instaat voor het registreren van de staat van lopende interne instructies. Het waarborgt dat de resultaten van out-of-order uitgevoerde operaties strikt volgens de oorspronkelijke programmavolgorde definitief in de architecturale staat (registers en geheugen) worden opgeslagen.
+    \item Dispatch: Het stadium in de processorpijplijn waarin gedecodeerde µops worden overgedragen aan de interne reservation stations en de ROB. De µop wacht hiermee op de daadwerkelijke beschikbaarheid van operanden en functionele units voor uitvoering.
+    \item Dispatch breedte: Het maximaal aantal gecombineerde µops dat de processor architecturaal binnen één enkele klokcyclus naar zijn uitvoereenheden kan dispatchen.
+    \item Superscalair: Een term die verwijst naar een processormodel dat is ontworpen om meerdere instructies of µops gelijktijdig te verwerken en dispatchen binnen dezelfde klokcyclus, wat impliciet een dispatch breedte vereist die groter is dan één.
+    \item Dispatch slot: Een beschikbaar logisch venster binnen een gegeven klokcyclus om één µop te dispatchen. Een onvolledige benutting van deze slots (bijvoorbeeld tijdens een cache miss) resulteert in onderbenutte rekencapaciteit.
+    \item Commit: De afsluitende fase van de instructieverwerking, waarbij de wijzigingen die door de voltooide instructie aan de architecturale staat zijn aangebracht, permanent en onomkeerbaar worden geregistreerd vanuit de ROB.
+    \item Miss event: Een formele verzamelnaam voor onverwachte processor-gebeurtenissen (zoals een cache miss of een foutieve sprongvoorspelling) die de continue stroom van instructies door de pijplijn onderbreken en resulteren in 'verloren' cycli aan wachttijd.
+    \item Cache miss: Een situatie waarbij de processor de benodigde data of instructie niet aantreft in de lokale en snellere cachehiërarchie. Als gevolg hiervan is een vertraagde toegang tot dieper gelegen geheugenniveaus vereist.
+    \item Foutieve sprongvoorspelling (misprediction): Het incident waarbij de branch predictor van de processor de stroom van een voorwaardelijke spronginstructie (branch) incorrect inschat. Dit vereist dat speculatief verwerkte instructies op het onjuiste pad worden geannuleerd.
+    \item Flushen: Het gecontroleerde proces waarbij de processorpijplijn, buffers en interne queues worden leeggemaakt ter verwijdering van speculatieve, foutief gegokte toestandswijzigingen na bijvoorbeeld een misprediction.
+    \item Interval simulatie: Een simulatietechniek die de stroom van instructies op een hoger abstractieniveau benadert door tussen miss events in te springen en de tussenliggende verwerking als een constante stroom te modelleren, om zo een optimaal evenwicht te bieden tussen simulatiesnelheid en nauwkeurigheid.
+    \item PICS (Per Instruction Cycle Stacks): Een profileringsmethode die gevisualiseerde inzichten levert door de cycli die een processorkern spendeert proportioneel en accuraat te attribueren aan de juiste onderliggende statische instructies binnen de programmacode.
+    \item Sniper-simulator: Een softwaregebaseerde interval-simulator ontwikkeld voor de x86-architectuur. Het stelt ontwikkelaars in staat om gedetailleerde prestatieprofielen te genereren voor zowel single- als multithreaded applicaties, met voldoende schaalbaarheid tot honderden parallelle threads.
 \end{itemize}
 \end{document}
