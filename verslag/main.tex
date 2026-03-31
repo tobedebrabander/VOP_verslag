@@ -89,9 +89,14 @@ In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli a
 
 \subsubsection{Correcte assignatie}
 Naast een correcte toewijzing van cycli aan instructies is het eveneens van belang te begrijpen waardoor die cycli worden veroorzaakt. Per instructie dient duidelijk te zijn of de bijbehorende cycli het gevolg zijn van bijvoorbeeld een cache-misser, een branch-voorspellingsfout, een resource-conflict, of een andere oorzaak. Dit inzicht is waardevol omdat het de onderliggende oorzaken van prestatieproblemen blootlegt en ontwikkelaars in staat stelt gerichte optimalisatiemogelijkheden te identificeren.
-\subsection{Per instruction cycle stacks}
-\todo[inline]{PICS uitleggen in het kort, want dat is uiteraard het probleem dat we willen oplossen}
+\subsection{Sniper-simulator}
+De Sniper-simulator is een softwaregebaseerde simulator voor de \textit{x86 architectuur} die parallele programma's kan simuleren. De simulator probeert de afweging te maken tussen simulatiesnelheid en nauwkeurigheid. Hoe men deze afweging maakt, wordt nu verder toegelicht.
 
+\subsubsection{Interval Simulatie}
+Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moeten gebeuren. Dit zou echter ten koste gaan van de simulatiesnelheid, wat het praktisch gebruik niet werkbaar zou maken. Eén van de technieken om beiden te combineren is \textit{Interval simulatie}. De uitvoering van een programma door een processorkern kan gezien worden als een stroom van instructies die onderbroken wordt door \textit{miss events} zoals \textit{cache misses}, \textit{foutieve sprongvoorspellingen}, etc. De simulator kan dus werken op een hoger abstractieniveau door tussen deze \textit{miss events} te springen en ertussen een constante stroom van instructies aan te nemen. Alhoewel deze techniek de eerder vermelde voordelen heeft, bemoeilijkt het de implementatie van \textit{PICS}'s.
+
+
+\newpage
 \section{Doelstellingen}
 Zoals eerder vermeld bestaan er reeds verschillende profileringsmethoden die informatie kunnen genereren over de prestaties van applicaties, maar deze voldoen niet altijd tegelijkertijd aan beide vereisten voor een goede profileringsmethode (Tijdsproportioneel en Correcte assignatie). Daarnaast is het duidelijk dat profileren zowel bij dispatch als bij commit belangrijk is, aangezien dit vaak een complementair beeld oplevert.
 Het doel van dit project is dan ook om PICS te implementeren op beide momenten binnen de Sniper-simulator, en dit te valideren aan de hand van gerichte benchmarktests. De geïmplementeerde methoden zullen vervolgens worden geëvalueerd en bijgestuurd op basis van verkregen resultaten.
