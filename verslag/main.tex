@@ -83,6 +83,7 @@ Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Pe
 In deze sectie worden er meer details uiteengezet over de theorie achter het project en de gebruikte software. Concreet zullen de belangrijkste aspecten van de theorie achter \textit{PICS} toegelicht worden, waarna ook enkele details over de Sniper-simulator.
 
 \subsection{Onderzoek}
+Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. In hun paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} wordt
 Het vertrekpunt is onderzoek van de UGent in samenwerking met de NTNU in Trondheim. Hun paper, \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026}, introduceert de \textit{Per Instruction Cycle Stacks (PICS)}.
 
 \subsubsection{Per Instruction Cycle Stacks (PICS)}
@@ -114,9 +115,12 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
 
 \subsection{PICS bij \textit{dispatch}}
 \subsubsection{\textit{dispatch} toestanden}
+\label{subsubsec:dispatch toestanden}
 Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Algemeen kunnen deze eenvoudig onderscheiden worden. Het zal blijken dat dit in de \textit{Sniper-simulator} anders zal werken, maar het is belangrijk om deze situaties eerst te begrijpen voordat er dieper in gegaan wordt op de implementatie in de simulator. De vier situaties zijn:
 \begin{itemize}
     \item \textbf{Base}: Er treden geen problemen op, alle \textit{dynamische µops} worden gedispatched in 1 cyclus en we atrribueren 1/\textit{dispatch breedte} cycli aan de instructies waarvan deze µops afkomstig zijn.
+    \item \textbf{Front end stall}: Dit kan het gevolg zijn van een instructie cache-misser, een TLB-misser, ... . Dit zal als gevolg hebben dat niet alle \textit{dispatch slots} worden gebruikt en er dus minder µops worden gedispatched. Na deze cyclus kan het dan dat er nog een aantal cycli helemaal geen µops worden gedispatched ten gevolge van deze stall. Al deze verloren cycli zullen moeten worden toegewezen aan de instructie horend bij de eerst volgende µop die dus de stall veroorzaakt heeft. Dit betekent zowel de cycli waar er niks gedispatched werd als het deel van de cyclus waar er wel µops gedispatched werden maar er minder waren dan de \textit{dispatch breedte}.
+    \item \textbf{Back end stall}: Dit betekend dat een µop niet kan dispatchen omdat er teveel µops bezig zijn in de back end. Dit kan bijvoorbeeld als gevolg hebben dat de ROB vol zit, of een functionele unit bezet is, ... . In dit geval zal de huidige cylcus opgedeelt worden in een deel waar er wel µops worden gedispatched en een deel waar er geen µops worden gedispatched. Alle cycli waar er geen µops worden gedispatched zullen moeten worden toegewezen aan de instructie horend bij de µop die de stall veroorzaakt heeft, dit is dus de eerst µop die niet kon dispatchen.
     \item \textbf{Front end stall}: Dit kan het gevolg zijn van een instructie \textit{cache-misser}, een TLB-misser, ... . Dit zal als gevolg hebben dat niet alle \textit{dispatch slots} worden gebruikt en er dus minder µops worden gedispatched. Na deze cyclus kan het dan dat er nog een aantal cycli helemaal geen µops worden gedispatched ten gevolge van deze stall. Al deze verloren cycli zullen moeten worden toegewezen aan de instructie horend bij de eerst volgende µop die dus de stall veroorzaakt heeft. Dit betekent zowel de cycli waar er niks gedispatched werd als het deel van de cyclus waar er wel µops gedispatched werden maar er minder waren dan de \textit{dispatch breedte}.
     \item \textbf{Back end stall}: Dit betekend dat een µop niet kan dispatchen omdat er teveel µops bezig zijn in de back end. Dit kan bijvoorbeeld zijn doordat de ROB vol zit, of een functionele unit bezet is, ... . In dit geval zal de huidige cylcus opgedeelt worden in een deel waar er wel µops worden gedispatched en een deel waar er geen µops worden gedispatched. Alle cycli waar er geen µops worden gedispatched zullen moeten worden toegewezen aan de instructie horend bij de µop die de stall veroorzaakt heeft, dit is dus de eerst µop die niet kon dispatchen.
     \todo[inline]{hoezo niet de µop die als laatste wel kon dispatchen?}
@@ -126,7 +130,54 @@ Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Alge
 
 \end{itemize}
 \subsubsection{Latency}
-Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Deze latency kan gebruikt worden om de PICS te bepalen. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
+Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
+
+Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
+\todo[inline]{(tekst van gpt, maar vond het wel een goede uitleg)De simulator modelleert de pipeline aan de hand van drie hoofdfases: dispatch, issue en commit. Elke fase werkt met een eigen set slots en bepaalt, op basis van de huidige toestand, wanneer een volgende gebeurtenis kan plaatsvinden. Deze zogenaamde \textit{next-event} wordt gebruikt om in de hoofdloop van de simulator het volgende relevante tijdstip te bepalen, waarna de simulatie naar dat punt vooruit springt. Op dat moment wordt voor elke pipelinefase opnieuw geëvalueerd of verdere voortgang mogelijk is.}
+
+\subsubsection{Implementatie}
+Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} ($1 / \textit{dispatchwidth}$) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsec:dispatch toestanden}).
+Op deze manier wordt elke dispatch-cycle volledig gealloceerd: ofwel integraal aan één \textit{statische instructie}, ofwel opgesplitst over meerdere \textit{statische instructies}.
+
+Een \textit{dispatch-slot} kan worden gezien als een atomair gedeelte binnen de dispatch-stage van een out of order CPU. Elke klokcyclus zijn er meerder \textit{dispatch-slots} beschikbaar, gelijk aan de \textit{dispatchwidth}.
+Elk slot krijgt maximaal één \textit{dynamische µop} toegewezen en bepaalt of deze kan worden doorgestuurd naar de backend (\textit{dispatchen}). Hierbij wordt gecontroleerd of er in de backend voldoende resources beschikbaar zijn (zoals vrije queue's en functionele units).
+Indien aan deze voorwaarde voldaan is, wordt de \textit{µop} gedispatched. Anders blijft deze wachten. Daarnaast kan een slot ook leeg zijn, bijvoorbeeld ten gevolge van een \textit{i-cache miss}, in welk geval geen dispatch mogelijk is.
+\todo[inline]{Deze uitleg misschien beter in stukje over sniper, en dan verwijzen naar daar. best nog even korte verfrissing over de essentiele punten.}
+
+In \textit{Sniper} wordt het mechanisme van \textit{dispatch-slots} uitgebreid. Voor elke \textit{µop}, toegewezen aan een \textit{slot} wordt gecontroleerd of de backend voldoende resources vrij heeft om de \textit{µop} te ontvangen.
+Daarnaast worden \textit{i-cache misses} en \textit{branch instructies} ook expliciet behandeld in de dispatch fase.
+Opdat een \textit{µop} gedispatched kan worden in \textit{Sniper}, wordt er gecontroleerd in welke van de 4 toestanden zijn toegewezen \textit{dispatch-slot} zich bevindt.
+O.b.v. die toestand wordt er bepaald wat er met de \textit{µop} en de dispatch-flow gebeurt. Er zijn 2 mogelijkheden:
+\begin{enumerate}
+    \item De \textit{µop} wordt gedispatched en dispatchen blijft doorgaan. Het slot bevindt zich in de base toestand.
+    \item De \textit{µop} wordt al dan niet gedispatched, maar dispatchen wordt onderbroken. Het slot bevindt zich in één van de andere 3 toestanden.
+\end{enumerate}
+
+Deze 2 gevallen worden hieronder verder toegelicht.
+
+\paragraph{Voortgezette dispatch}
+
+
+Dit beschrijft de normale werking van de dispatch-stage. In dit geval ondervindt de \textit{µop} geen \textit{i-cache miss}, is er voldoende ruimte beschikbaar in de backend om nieuwe \textit{µop's} te ontvangen, en betreft het geen branch instructie.
+De \textit{µop} kan bijgevolg worden gedispatched en de dispatch-stage blijft actief.
+
+Bij dispatch wordt een fractie van de cycle, namelijk $1 / \textit{dispatchwidth}$, toegewezen aan de \textit{base component} van de \textit{statische instructie} die overeenkomt met deze \textit{dynamische µop}. Elke gedispatchte \textit{dynamische µop} draagt dus precies $1 / \textit{dispatchwidth}$ bij aan deze base component.
+Aangezien een \textit{statische instructie} meerdere keren kan worden uitgevoerd en kan bestaan uit meerdere \textit{µop's}, geldt uiteindelijk:
+
+\[
+\textit{base component} =
+(N_{\text{exec}} \cdot N_{\mu op}) \cdot \frac{1}{\textit{dispatchwidth}}
+\]
+
+Hierbij stellen $N_{\text{exec}}$ en $N_{\mu op}$ respectievelijk het aantal uitvoeringen van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie bestaat voor.
+
+Na het dispatchen van de \textit{µop} en het toewijzen van deze fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
+
+\paragraph{Onderbroken dispatch:}
+
+
+
+
 
 
 \todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
