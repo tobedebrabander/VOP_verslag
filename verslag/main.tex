@@ -19,6 +19,29 @@
 
 \usepackage{float}
 
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+
+\lstset{
+    language=C,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green!70!black},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=10pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false,
+}
+
 \usepackage{amsmath}
 
 \usepackage{amsthm}
@@ -112,7 +135,15 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
 
 
 \section{Technische bespreking}
+\subsection{Latency}
+\label{subsec:latency}
+Aangezien de \textit{Sniper-simulator} een event-based simulator is, wordt er continu een latency berekend tot de volgende gebeurtenis. Deze zogenaamde next-event bepaalt in de hoofdloop van de simulator het volgende relevante tijdstip, waarna de simulatie in één stap naar dat punt vooruit springt. Op dat moment wordt voor elke pipelinefase opnieuw geëvalueerd of verdere voortgang mogelijk is. De pipeline zelf wordt gemodelleerd aan de hand van drie hoofdfases—\textit{dispatch}, \textit{issue} en \textit{commit}—waarbij elke fase met een eigen set slots werkt en, op basis van de huidige toestand, bepaalt wanneer een volgende gebeurtenis kan plaatsvinden. Zolang er dus in minstens één van deze fases een slot is dat klaar is om te verwerken, zal de simulator blijven doorgaan. En zal de latency dus gewoon gelijk zijn aan één, want er wordt gesprongen naar de volgende cyclus.
 
+Binnen dit model is het belangrijk om latencies correct toe te wijzen aan de juiste instructies en om onderscheid te maken tussen de verschillende oorzaken van vertragingen. Zo zal bijvoorbeeld bij een \textit{cache-misser} een penalty worden toegevoegd aan de latency, waardoor de volgende gebeurtenis later plaatsvindt. Deze latencies omvatten steeds alle cycli, zelfs wanneer het volgende event zich al in de eerstvolgende cyclus voordoet. Daarom is het idee om op het moment dat een vertraging start te markeren welke instructie hiervoor verantwoordelijk is, en vervolgens alle latencies tot het einde van die vertraging consequent aan deze instructie toe te wijzen.
+
+Belangrijk om op te merken is dat als latency gelijk is aan één we in een speciaal geval terecht komen waar ofwel in de huidige cyclus alles correct verloopt ofwel er een vertraging gestart is. Hier zal extra aandacht aan moeten worden besteed en er zal in dit specifieke geval geen attributie van cycli zijn a.d.h.v. het latency mechanisme.
+
+In wat volgt zal er verder worden ingegaan op de implementatie van \textit{PICS} bij \textit{dispatch} en \textit{commit}.
 \subsection{PICS bij \textit{dispatch}}
 \subsubsection{\textit{dispatch} toestanden}
 \label{subsubsec:dispatch toestanden}
@@ -129,11 +160,6 @@ Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Alge
     \item \textbf{Misprediction}: Als laatste kan het ook dat er een foute voorspelling is gedaan waardoor er opnieuw cycli verloren gaan. In dit geval zijn er drie zaken waarmee rekening moet worden gehouden, in elk van de drie gevallen worden de cycli toegewezen aan de instructie die de voorspelling veroorzaakte. Ten eerste moeten de cycli die verloren gaan door het uitvoeren van het foute pad worden toegewezen. Ten tweede moeten de cycli die verloren gaan door het \textit{flushen} van de buffers en queues worden toegewezen. Als laatste moet ook binnen de cyclus waar er nog wel µops worden gedispatched maar er minder zijn dan de \textit{dispatch breedte}, het deel waarin niet gedispatched werd worden toegewezen aan deze instructie.
 
 \end{itemize}
-\subsubsection{Latency}
-Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
-
-Aangezien de \textit{Sniper-simulator} een event-based simulator is zal er in de simulator altijd een latency berekend worden tot de volgende gebeurtenis. Zo zal er bijvoorbeeld bij een cache-misser een penalty opgeteld worden bij dit latency-attribuut waardoor de volgende gebeurtenis later zal plaatstvinden. Het zal dus belangrijk zijn om deze latencies correct toe te wijzen aan de juiste instructie waarbij we onderscheid maken tussen de verschillende oorzaken van de latencies. Deze latencies zullen altijd alle cycli omvatten ookal is het volgende event bijvoorbeeld al de volgende cyclus. Het idee is dan om op het moment dat er een vertraging start te markeren welke instructie hier de oorzaak voor is en dan tot dat die vertraging voorbij is alle latencies daar tussen toewijzen aan deze instructie.
-\todo[inline]{(tekst van gpt, maar vond het wel een goede uitleg)De simulator modelleert de pipeline aan de hand van drie hoofdfases: dispatch, issue en commit. Elke fase werkt met een eigen set slots en bepaalt, op basis van de huidige toestand, wanneer een volgende gebeurtenis kan plaatsvinden. Deze zogenaamde \textit{next-event} wordt gebruikt om in de hoofdloop van de simulator het volgende relevante tijdstip te bepalen, waarna de simulatie naar dat punt vooruit springt. Op dat moment wordt voor elke pipelinefase opnieuw geëvalueerd of verdere voortgang mogelijk is.}
 
 \subsubsection{Implementatie}
 Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} ($1 / \textit{dispatchwidth}$) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsec:dispatch toestanden}).
@@ -253,6 +279,99 @@ Op deze manier wordt de volledige kost van een misprediction correct en volledig
 
 
 \todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
+\section{Verificatie}
+\subsection{Handmatig}
+De \textit{Sniper-simulator} biedt de mogelijkheid om tijdens elke iteratie van de hoofdloop (buiten tijdens de sprongen tussen events) de status van de \textit{Re-order Buffer (ROB)} naar de terminal te printen. Door tegelijkertijd de cycli-attributie per instructie weer te geven, kan op kleinschalig niveau geverifieerd worden of de toewijzing van cycli correct verloopt.
+
+Voor deze handmatige verificatie maken we gebruik van een \textit{microbenchmark} (waarover later meer details volgen), die gestructureerd is zoals hieronder weergegeven:
+\begin{lstlisting}[language=C]
+int loop(int zero) {
+  int t = 0,i,iter;
+  for(iter=0; iter < ITERS; ++iter) {
+    for(i=0; i < STEP + zero; i+=1) {
+      if(randArr[i])  {
+        t+=3+3*t;
+      } else {
+        t-=1-5*t;
+      }
+    }
+  }
+  return t;
+}
+\end{lstlisting}
+\todo[inline]{verwijzing naar microbenchmarks github}
+Bij de uitvoering van deze code worden prestatieverliezen door verschillende factoren verwacht. Enkele cycli zullen verloren gaan aan \textit{mispredictions}, al blijft dit aantal beperkt aangezien de \textit{randArr}-array een alternerend patroon bevat, wat resulteert in eenvoudig te voorspellen lusgedrag. Daarnaast zullen onvermijdelijk \textit{front-end stalls} optreden, onder meer door \textit{instruction cache misses} bij de eerste uitvoering van een instructie. Ook \textit{back-end stalls} zijn mogelijk, bijvoorbeeld wanneer interne buffers en queues vol raken. Omdat prestatieverliezen zich op verschillende plaatsen in de pijplijn kunnen manifesteren, is het cruciaal om de correcte toewijzing van \textit{PICS} zowel bij \textit{dispatch} als bij \textit{commit} te controleren; deze twee perspectieven bieden immers een complementair beeld (zie ?).
+
+In wat volgt wordt de effectieve output van de \textit{ROB} op enkele kritieke momenten geanalyseerd.
+
+\begin{itemize}
+    \item \textbf{Front-end stall door I-cache miss:}
+\begin{Verbatim}[fontsize=\footnotesize, commandchars=\\\{\}]
+    ** ROB state @ 238898  size(0) total(7)
+   \colorbox{yellow}{Front-end stalled until 239090}, in \colorbox{purple}{I-cache miss}
+   RS entries: 0
+   Outstanding loads: 0  stores: 0
+   [  0]  PREROB                          1  EXEC ( 1) 401720: 
+   [  1]  PREROB                          2  EXEC ( 1) 401726: 
+   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
+   [  3]  PREROB                          4  EXEC ( 1) 401739: 
+   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
+   [  5]  PREROB                          6  EXEC ( 1) 401746: 
+   [  6]  PREROB                          7  EXEC ( 1) 401748: 
+Adding fe_stall to PICS @ Dispatch: 1
+Adding fe_stall to PICS @ Commit: 1
+Adding fe_stall to PICS @ Dispatch: 191
+Adding fe_stall to PICS @ Commit: 191
+\end{Verbatim}
+
+Allereerst markeert het \textcolor{yellow}{latency attribuut} dat het volgende event zal plaatsvinden op cyclus 239090, zoals uitgelegd in \ref{subsec:latency}. Daarnaast wordt de oorzaak van deze vertraging gespecificeerd: dit is een \textcolor{purple}{\textit{cache miss}} en veroorzaakt bijgevolg een \textit{front-end stall}. Verder bevinden zich zeven \textit{µop's} in de PREROB. De aanwezigheid van een \textit{µop} in de PREROB duidt erop dat deze ofwel klaar is voor dispatch, ofwel hier nog niet voor in aanmerking komt. Dit laatste is een specifieke eigenschap van de \textit{Sniper-simulator} (zoals eerder vermeld in sectie ??). Een instructie kan bijvoorbeeld een \textit{instruction cache miss} veroorzaken. Omdat dit binnen de simulator niet op een traditionele manier verloopt, wordt er pas een penalty aan de latency toegevoegd op het moment dat deze instructie normaal gesproken gedispatched zou worden.
+
+Hier is duidelijk te zien dat de attributie van cycli correct verloopt: de cycli die verloren gaan door de \textit{cache miss} zijn deze vanaf de huidige cyclus tot aan het volgende event. Dit zijn er \(239090 - 238898 = 192 \), wat overeen komt met het toevoegen van eerst één cyclus en daarna de volgende 191 cycli. Waarom dit in twee stappen gebeurt staat beter uitgelegd in de technische bespreking.
+
+\item \textbf{Misprediction en Back-end stall:}
+\begin{Verbatim}[fontsize=\footnotesize, commandchars=\\\{\}]
+    ** ROB state @ 239090  size(0) total(8)
+   RS entries: 0
+   Outstanding loads: 0  stores: 0
+   [  0]  PREROB                          1  EXEC ( 1) 401720: 
+   [  1]  PREROB                          2  EXEC ( 1) 401726: 
+   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
+   [  3]  PREROB                          4  EXEC ( 1) 401739: 
+   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
+   [  5]  PREROB                          6  EXEC ( 1) 401746: 
+   [  6]  PREROB                          7  EXEC ( 1) 401748: 
+   [  7]  PREROB                          8  EXEC ( 1) 40174b: 
+Adding base to PICS @ Dispatch: 0.249998
+Adding base to PICS @ Dispatch: 0.249998
+\colorbox{purple}{Adding base to PICS @ Dispatch : 0.249998}
+\colorbox{yellow}{Adding mispred to PICS @ Dispatch: 0.249998}
+\colorbox{blue}{Adding be_stall to PICS @ Commit: 1}
+Adding mispred to PICS @ Dispatch: 0
+Adding be_stall to PICS @ Commit: 0
+\end{Verbatim}
+In deze situatie ontbreekt het \textit{latency}-attribuut, wat erop wijst dat er geen vertraging optreedt en de volgende gebeurtenis in de direct daaropvolgende cyclus zal plaatsvinden. Ondanks het ontbreken van deze vertraging kunnen er tijdelijk slechts drie \textit{µop's} worden \textit{gedispatched}. De oorzaak hiervan ligt bij de derde \textit{µop}, die een \textit{misprediction} veroorzaakt. Deze specifieke instructie wordt nog wel \textcolor{purple}{\textit{gedispatched}}, maar aangezien de simulator op dit moment al detecteert dat de voorspelling foutief is, wordt het dispatchen van verdere \textit{µop's} onmiddellijk gestaakt. Er wordt op correcte wijze \textcolor{yellow}{0.25 cycli} toegekend aan deze \textit{µop} omwille van de \textit{misprediction}. Alle overige verloren cycli ten gevolge van deze foute voorspelling moeten eveneens aan deze specifieke \textit{µop} worden toegewezen, totdat deze succesvol \textit{geissued} is en de buffers en queues volledig \textit{geflushed} zijn.
+
+De \textit{PICS} geregistreerd bij \textit{commit} zullen in theorie correct zijn, maar schetsen een beduidend ander beeld. Aangezien er al twee eerdere \textit{µop's} de dispatch-fase doorliepen, maar deze blijkbaar niet direct verder verwerkt konden worden, krijgt de allereerste \textit{µop} logischerwijs \textcolor{blue}{cycli geattribueerd wegens een \textit{back-end stall}}. Dit fenomeen maskeert in feite de eigenlijke \textit{misprediction} door deze als een \textit{back-end stall} te camoufleren. Deze situatie illustreert helder het cruciale belang van profileren bij zowel de \textit{dispatch}- als de \textit{commit}-fase; deze gecombineerde aanpak levert namelijk een veel nauwkeuriger en completer beeld op van het daadwerkelijke applicatiegedrag en complexe prestatieproblemen.
+
+Als de volgende cycli worden geanalyseerd is het duidelijk dat er bij \textit{dispatch} heel de tijd wordt geatribueert voor \textit{misprediction}. Bij \textit{commit} worden er nog enkele cycli geattribueerd aan de \textit{back-end stall}. Tot dat de \textit{µop} die de \textit{misprediction} veroorzaak heeft vanvoor in de buffer komt, vanaf dan wordt er ook geattribueerd aan deze \textit{µop} voor de \textit{misprediction} tot de \textit{µop} is geissued (mocht dit nog niet gebeurt zijn) en de penalty die overeenkomt met het  \textit{flushen} gedaan is.
+\end{itemize}
+
+Hoewel deze analyse kan worden uitgebreid naar alle mogelijke scenario's, vormt de voorgaande bespreking reeds een sterke indicatie dat de toewijzing van cycli correct verloopt. Bovendien benadrukt het een duidelijk fundamenteel onderscheid tussen de profileringsinformatie op \textit{dispatch}- en \textit{commit}-niveau. In de hieropvolgende sectie zal de correctheid van de cyclusattributie verder worden onderbouwd en formeel bewezen worden aan de hand van enkele vastgestelde invarianten.
+\subsection{Invarianten}
+\todo{klopt ook voor commit?}
+\subsubsection{Totaal aantal cycli}
+Het is gemakkelijk in te zien dat het totale aantal cycli tussen de start en het einden van de simulatie gelijk moet zijn aan de som van alle cycli die zijn toegewezen aan alle instructies. Dit is een fundamentele invariant, aangezien elke cyclus die wordt gespendeerd aan het uitvoeren van een programma moet worden toegeschreven aan een specifieke instructie. Er kunnen geen cycli verloren gaan of onterecht worden toegekend, omdat dit zou leiden tot een verschil tussen het totale aantal cycli en de som van de geattribueerde cycli.
+
+Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
+\subsubsection{Base}
+\subsubsection{Front-end stalls}
+De invariant hier is dat zo goed als alle cycli geattribueerd aan een \textit{front-end stall} veroorzaakt zijn door een \textit{instruction cache miss}. Hieronder zal er dan ook een \textit{microbenchmark} worden besproken die specifiek ontworpen is om dit te testen.
+\todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
+\subsubsection{Mispredictions}
+De invariant hier is dat alle cycli geattribueerd aan een \textit{misprediction} veroorzaakt zijn door een foute voorspelling van een branch instructie. Ook hier zal er een specifieke \textit{microbenchmark} worden besproken die ontworpen is om dit te testen.
+\todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
+
+Nu kan er gemakkelijk worden ingezien dat als de bovenstaande varianten kloppen en de totale som van cycli klopt, dat ook het aantal cycli geattribueerd aan \textit{back-end stalls} correct moet zijn, aangezien dit het verschil is tussen het totale aantal cycli en de som van de cycli geattribueerd aan de andere componenten.
 \section{Resultaten}
 \todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel \textit{dispatch} als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
 \section{Reflectie}
