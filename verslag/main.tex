@@ -3,7 +3,7 @@
 \usepackage{todonotes}
 
 \usepackage{xurl}
-\usepackage{microtype}
+\usepackage[expansion=false]{microtype}
 
 \usepackage{hyperref}
 \hypersetup{
@@ -239,13 +239,13 @@ In wat volgt wordt de effectieve output van de \textit{ROB} op enkele kritieke m
    \colorbox{yellow}{Front-end stalled until 239090}, in \colorbox{purple}{I-cache miss}
    RS entries: 0
    Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720: 
-   [  1]  PREROB                          2  EXEC ( 1) 401726: 
-   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
-   [  3]  PREROB                          4  EXEC ( 1) 401739: 
-   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
-   [  5]  PREROB                          6  EXEC ( 1) 401746: 
-   [  6]  PREROB                          7  EXEC ( 1) 401748: 
+   [  0]  PREROB                          1  EXEC ( 1) 401720:
+   [  1]  PREROB                          2  EXEC ( 1) 401726:
+   [  2]  PREROB                          3  EXEC ( 1) 40172c:
+   [  3]  PREROB                          4  EXEC ( 1) 401739:
+   [  4]  PREROB                          5  EXEC ( 1) 40173f:
+   [  5]  PREROB                          6  EXEC ( 1) 401746:
+   [  6]  PREROB                          7  EXEC ( 1) 401748:
 Adding fe_stall to PICS @ Dispatch: 1
 Adding fe_stall to PICS @ Commit: 1
 Adding fe_stall to PICS @ Dispatch: 191
@@ -261,14 +261,14 @@ Hier is duidelijk te zien dat de attributie van cycli correct verloopt: de cycli
     ** ROB state @ 239090  size(0) total(8)
    RS entries: 0
    Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720: 
-   [  1]  PREROB                          2  EXEC ( 1) 401726: 
-   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
-   [  3]  PREROB                          4  EXEC ( 1) 401739: 
-   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
-   [  5]  PREROB                          6  EXEC ( 1) 401746: 
-   [  6]  PREROB                          7  EXEC ( 1) 401748: 
-   [  7]  PREROB                          8  EXEC ( 1) 40174b: 
+   [  0]  PREROB                          1  EXEC ( 1) 401720:
+   [  1]  PREROB                          2  EXEC ( 1) 401726:
+   [  2]  PREROB                          3  EXEC ( 1) 40172c:
+   [  3]  PREROB                          4  EXEC ( 1) 401739:
+   [  4]  PREROB                          5  EXEC ( 1) 40173f:
+   [  5]  PREROB                          6  EXEC ( 1) 401746:
+   [  6]  PREROB                          7  EXEC ( 1) 401748:
+   [  7]  PREROB                          8  EXEC ( 1) 40174b:
 Adding base to PICS @ Dispatch: 0.249998
 Adding base to PICS @ Dispatch: 0.249998
 \colorbox{purple}{Adding base to PICS @ Dispatch : 0.249998}
