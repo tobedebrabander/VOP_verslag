@@ -155,10 +155,10 @@ O.b.v. die toestand wordt er bepaald wat er met de \textit{µop} en de dispatch-
 
 Deze 2 gevallen worden hieronder verder toegelicht.
 
-\paragraph{Voortgezette dispatch}
+\paragraph{1.}
 
 
-Dit beschrijft de normale werking van de dispatch-stage. In dit geval ondervindt de \textit{µop} geen \textit{i-cache miss}, is er voldoende ruimte beschikbaar in de backend om nieuwe \textit{µop's} te ontvangen, en betreft het geen branch instructie.
+Dit beschrijft de normale werking van de dispatch-stage. In dit geval ondervindt de \textit{µop} geen \textit{i-cache miss}, is er voldoende ruimte beschikbaar in de backend om nieuwe \textit{µop's} te ontvangen, en betreft het geen misspredicted branch instructie.
 De \textit{µop} kan bijgevolg worden gedispatched en de dispatch-stage blijft actief.
 
 Bij dispatch wordt een fractie van de cycle, namelijk $1 / \textit{dispatchwidth}$, toegewezen aan de \textit{base component} van de \textit{statische instructie} die overeenkomt met deze \textit{dynamische µop}. Elke gedispatchte \textit{dynamische µop} draagt dus precies $1 / \textit{dispatchwidth}$ bij aan deze base component.
@@ -173,8 +173,80 @@ Hierbij stellen $N_{\text{exec}}$ en $N_{\mu op}$ respectievelijk het aantal uit
 
 Na het dispatchen van de \textit{µop} en het toewijzen van deze fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
 
-\paragraph{Onderbroken dispatch:}
+\paragraph{2:}
+In dit geval ondervindt de \textit{µop} een van de drie mogelijke problemen die de dispatch fase zal onderbreken: een \textit{i-cache miss} (frontend stall), een resource conflict in de backend (backend stall), of een mispredicted branch instructie (misprediction).
+Voor elke oorzaak wordt hetzelfde basismechanisme gehanteerd. Wanneer een \textit{µop} een stall veroorzaakt, wordt deze samen met de stall oorzaak opgeslagen in een datastructuur. Vanaf dat moment wordt de dispatch fase volledig geblokkeerd en kunnen er geen nieuwe \textit{µop's} meer gedispatched worden.
+Alle \textit{dispatch slots} blijven gedurende deze periode ongebruikt en hun latency moet bijgevolg geattribueerd worden.
 
+Hoewel dispatch stilvalt, blijft de main loop van de simulator verder lopen, aangezien andere fasen eventueel nog nuttig werk kunnen verrichten. In elke iteratie bepalen de verschillende fasen hun volgende event,
+wat aangeeft tot welk tijdstip de simulator vooruit kan springen. Elke cycli die tijdens deze periode wordt overgeslagen wordt, zal worden toegewezen aan de PICS component die overeenkomt met de stall oorzaak van de \textit{instructie} waartoe de \textit{µop} in de datastructuur behoort.
+Op deze manier worden alle cycli waarin de dispatch fase onderbroken is volledig geattribueerd aan één \textit{statische instructie}. Zodra de stall is afgelopen en dispatch opnieuw kan verdergaan, wordt de \textit{µop} uit de datastructuur verwijderd zodat enkel en alleen de stall latency geaccount wordt.
+
+Daarnaast is het belangrijk om op te merken dat ook binnen de cyclus waarin de stall optreedt, niet alle \textit{dispatch slots} noodzakelijk benut worden. Hun latency moet eveneens op correcte manier toegewezen worden. Stel dat \textit{dispatchwidth} gelijk is aan 4. Indien in een bepaalde cyclus het eerste \textit{dispatch slot} succesvol een \textit{µop} dispatcht, maar het tweede slot
+een \textit{µop} bevat die een \textit{I-cache miss} veroorzaakt, wordt de dispatch fase vanaf dat moment onderbroken. De resterende drie \textit{dispatch slots} in die cycle blijven ongebruikt.
+
+De fractie van de dispatch cycle die overeenkomt met deze ongebruikte slots (in dit geval 3/4 van de cyclus) wordt eveneens toegewezen aan de PICS component die overeenkomt met de stall oorzaak.
+Samen met de reeds geattribueerde base component van het eerste dispatch slot wordt zo de volledige dispatch cycle geaccount.
+
+
+Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
+In wat volgt zullen de 3 gevallen verder genuanceerd worden.
+
+
+
+\subparagraph{Frontend stall:}
+
+Een frontend stall wordt veroorzaakt door een \textit{I-cache miss}. In een echte CPU zal een \textit{I-cache miss} in de decodefase ervoor zorgen dat de toevoer van \textit{µop's} naar de dispatchfase tijdelijk onderbroken wordt. In \textit{Sniper} blijft deze toevoer echter constant.
+
+Een \textit{I-cache miss} wordt daarom niet gemodelleerd door het ontbreken van \textit{µop's}, maar door het artificieel blokkeren van de dispatchfase. Hoewel er dus nog \textit{µop's} beschikbaar zijn, wordt dispatch expliciet onderbroken om de vertraging ten gevolge van de \textit{I-cache miss} te simuleren.
+
+Meer concreet wordt tijdens het dispatchen van elke \textit{µop} gecontroleerd of deze onderhevig was aan een \textit{I-cache miss}. Indien dit het geval is, wordt de dispatchfase onmiddellijk onderbroken, ongeacht het aantal resterende \textit{dispatch slots} in dezelfde cyclus.
+
+De oorzaak hiervan is dat de instructie waartoe de \textit{µop} behoort nog niet beschikbaar is vanuit het instructiegeheugen. In een echte CPU zou het overeenkomstige \textit{dispatch slot} dus leeg zijn, maar door de constante toevoer in \textit{Sniper} is de \textit{µop} reeds aanwezig. Hoewel de miss eerder in de pipeline (tijdens decode) werd gedetecteerd en de bijhorende latency daar werd bepaald, wordt deze pas zichtbaar in de dispatchfase.
+
+Vanaf het moment dat de stall optreedt, wordt het basismechanisme toegepast: de \textit{µop} en de stall-oorzaak worden in de datastructuur geplaatst, en de dispatchfase blijft geblokkeerd tot het tijdstip waarop de instructie zou terugkeren uit het instructiegeheugen. Dit tijdstip wordt als \textit{next event} teruggegeven aan de main loop.
+
+Alle cycli tijdens deze periode worden toegewezen aan de frontend component van de corresponderende \textit{statische instructie}. Dit omvat zowel volledige cycli zonder dispatch als het resterende deel van de cyclus waarin de stall initieel optrad.
+
+Op deze manier wordt de volledige miss latency correct en volledig geattribueerd.
+
+
+\subparagraph{Backend stall:}
+
+Een backend stall treedt op wanneer er onvoldoende resources beschikbaar zijn in de backend om een \textit{µop} te ontvangen. In \textit{Sniper} kan dit twee oorzaken hebben: de \textit{Reorder Buffer (ROB)} is vol, of de \textit{reservation stations} hebben geen vrije plaatsen meer.
+
+Tijdens de dispatchfase wordt voor elke \textit{µop} gecontroleerd of beide resources voldoende capaciteit hebben. Indien één van deze voorwaarden niet voldaan is, kan de \textit{µop} niet gedispatched worden.
+
+De \textit{µop} die niet gedispatched kan worden, wordt samen met de stall-oorzaak in de datastructuur geplaatst, waarna de dispatchfase wordt onderbroken.
+
+In tegenstelling tot een frontend stall is het eindtijdstip van de stall hier niet op voorhand gekend. Het vrijmaken van backend-resources hangt af van de voortgang in de issue- en commitfase, die entries uit de \textit{reservation stations} en de \textit{ROB} verwijderen. Daarom wordt als \textit{next event} een oneindig tijdstip teruggegeven.
+
+De voortgang van de simulatie wordt hierdoor volledig bepaald door events in de issue- en commitfase. De main loop springt telkens naar het eerstvolgende event, waarna opnieuw gecontroleerd wordt of dispatch hervat kan worden.
+
+Zolang de backend-resources niet beschikbaar zijn, blijft de \textit{µop} in de datastructuur aanwezig en worden alle cycli toegewezen aan de backend component van de corresponderende \textit{statische instructie}, volgens het basismechanisme.
+
+Zodra een event in de backend voldoende resources vrijmaakt, kan de \textit{µop} alsnog gedispatched worden. Op dat moment wordt deze uit de datastructuur verwijderd en wordt de dispatchfase hervat.
+
+Op deze manier wordt de volledige stall latency correct en volledig geattribueerd.
+
+
+\subparagraph{Misprediction:}
+
+Een stall ten gevolge van een misprediction wordt veroorzaakt door een foutief voorspelde branch instructie. In een echte CPU wordt een branch \textit{µop} behandeld zoals een gewone \textit{µop}: deze wordt gedispatched samen met \textit{µop's} op het voorspelde pad. Indien tijdens de execute fase blijkt dat de voorspelling fout was, worden alle jongere \textit{µop's} geflushed en wordt het fetchen hervat vanaf het correcte pad.
+
+In \textit{Sniper} wordt dit gedrag anders gemodelleerd. Aangezien de simulator kennis heeft van het correcte pad, worden foutief gespeculeerde \textit{µop's} niet gedispatched. In plaats daarvan wordt de kost van een misprediction gesimuleerd door de dispatchfase tijdelijk te blokkeren.
+
+Tijdens dispatch wordt gecontroleerd of een \textit{µop} een foutief voorspelde branch is. Indien dit het geval is, wordt de \textit{µop} nog gedispatched. Vervolgens wordt deze samen met de stall-oorzaak in de datastructuur geplaatst en wordt de dispatchfase geblokkeerd.
+
+De totale stall latency bestaat uit twee componenten. Enerzijds is er de \textit{resolution time}: de tijd tot de branch effectief uitgevoerd wordt in de issuefase. Tijdens deze periode is het eindtijdstip van de stall nog niet gekend.
+
+Vanaf het moment dat de branch uitgevoerd wordt, wordt het eindtijdstip wel bepaald. Dit komt overeen met een vaste \textit{flush penalty}, die de tijd modelleert nodig om de pipeline te herstellen en het correcte pad opnieuw op te starten.
+
+Gedurende de volledige stall-periode worden alle cycli toegewezen aan de misprediction component van de corresponderende \textit{statische instructie}. Dit omvat ook de resterende \textit{dispatch slots} in de cyclus waarin de stall initieel optrad.
+
+Zodra de flush penalty verstreken is, wordt de \textit{µop} uit de datastructuur verwijderd en wordt de dispatchfase hervat.
+
+Op deze manier wordt de volledige kost van een misprediction correct en volledig geattribueerd.
 
 
 
