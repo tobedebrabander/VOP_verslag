@@ -285,6 +285,21 @@ Als de volgende cycli worden geanalyseerd is het duidelijk dat er bij \textit{di
 \end{itemize}
 
 Hoewel deze analyse kan worden uitgebreid naar alle mogelijke scenario's, vormt de voorgaande bespreking reeds een sterke indicatie dat de toewijzing van cycli correct verloopt. Bovendien benadrukt het een duidelijk fundamenteel onderscheid tussen de profileringsinformatie op \textit{dispatch}- en \textit{commit}-niveau. In de daaropvolgende sectie zal de correctheid van de cyclusattributie verder worden onderbouwd en formeel bewezen worden aan de hand van enkele vastgestelde invarianten.
+\subsection{Invarianten}
+\todo{klopt ook voor commit?}
+\subsubsection{Totaal aantal cycli}
+Het is gemakkelijk in te zien dat het totale aantal cycli tussen de start en het einden van de simulatie gelijk moet zijn aan de som van alle cycli die zijn toegewezen aan alle instructies. Dit is een fundamentele invariant, aangezien elke cyclus die wordt gespendeerd aan het uitvoeren van een programma moet worden toegeschreven aan een specifieke instructie. Er kunnen geen cycli verloren gaan of onterecht worden toegekend, omdat dit zou leiden tot een verschil tussen het totale aantal cycli en de som van de geattribueerde cycli.
+
+Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
+\subsubsection{Base}
+\subsubsection{Front-end stalls}
+De invariant hier is dat zo goed als alle cycli geattribueerd aan een \textit{front-end stall} veroorzaakt zijn door een \textit{instruction cache miss}. Hieronder zal er dan ook een \textit{microbenchmark} worden besproken die specifiek ontworpen is om dit te testen.
+\todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
+\subsubsection{Mispredictions}
+De invariant hier is dat alle cycli geattribueerd aan een \textit{misprediction} veroorzaakt zijn door een foute voorspelling van een branch instructie. Ook hier zal er een specifieke \textit{microbenchmark} worden besproken die ontworpen is om dit te testen.
+\todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
+
+Nu kan er gemakkelijk worden ingezien dat als de bovenstaande varianten kloppen en de totale som van cycli klopt, dat ook het aantal cycli geattribueerd aan \textit{back-end stalls} correct moet zijn, aangezien dit het verschil is tussen het totale aantal cycli en de som van de cycli geattribueerd aan de andere componenten.
 \section{Resultaten}
 \todo[inline]{hier al onze benchmarks gebruiken om korte testen te doen, best vanaf volgende week (week 7) eigenlijk al want het is ook goed om er in te schrijven da we nog op een probleem kwamen ofz. Ook voor zowel \textit{dispatch} als commit (of te samen, of alle 3) keer een programma waar we expres iets raar doen optimaliseren.}
 \section{Reflectie}
