@@ -1,6 +1,6 @@
-from dip_data import DipData
+from pics_data import PicsData
 from plot_stacks import plot_dips
-from hottest_dip import n_hottest_dips
+from hottest_pics import n_hottest_pics
 
 import argparse
 
@@ -12,5 +12,5 @@ parser.add_argument('-t', '--title')
 
 args = parser.parse_args()
 
-data = DipData(args.db_file)
-plot_dips(n_hottest_dips(int(args.amount), data), args.title, 'VOP_verslag/viz/out_noop/' + args.title)
+data = PicsData(args.db_file)
+plot_dips(n_hottest_pics(int(args.amount), data), args.title, 'VOP_verslag/viz/out/' + args.title)

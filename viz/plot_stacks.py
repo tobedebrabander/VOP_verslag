@@ -1,33 +1,34 @@
-from dip_data import Dip
+from pics_data import PICS_c
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_dips(dip, title, save_file):
-    if type(dip) != list:
-        raise ValueError("plot_dips: dips to be plot should be in a Python list")
+def plot_dips(pics, title, save_file):
+    if type(pics) != list:
+        raise ValueError("plot_pics: pics to be plot should be in a Python list")
 
     fig, ax = plt.subplots()
     width = 0.4
 
-    bottom = np.zeros(len(dip))
+    bottom = np.zeros(len(pics))
+    x = np.arange(len(pics))
 
-    instr = tuple(d.instr for d in dip)
+    instr = tuple(s.instr for s in pics)
     state_counts = {
-        'Base': np.array([d.base for d in dip]),
-        'Front end': np.array([d.fe_stall for d in dip]),
-        'Back end': np.array([d.be_stall for d in dip]),
-        'Misprediction': np.array([d.mispred for d in dip])
+        'Compute': np.array([s.compute for s in pics]),
+        'Drained': np.array([s.drained for s in pics]),
+        'Stalled': np.array([s.stalled for s in pics]),
+        'Flushed': np.array([s.flushed for s in pics])
     }
 
     for state, counts in state_counts.items():
-        p = ax.bar(instr, counts, width, label=state, bottom=bottom)
+        p = ax.bar(x, counts, width, label=state, bottom=bottom)
         bottom += counts
 
-        labels = [f"{value:g}" if not np.isclose(value, 0.0) else "" for value in counts]
-        ax.bar_label(p, labels=labels, label_type='center')
+        ax.bar_label(p, label_type='center')
 
+    ax.set_xticks(x, instr)
     ax.set_title(title)
     ax.legend()
     fig.savefig(save_file)
