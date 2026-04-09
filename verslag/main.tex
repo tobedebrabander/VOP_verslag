@@ -284,7 +284,7 @@ De \textit{PICS} geregistreerd bij \textit{commit} zullen in theorie correct zij
 Als de volgende cycli worden geanalyseerd is het duidelijk dat er bij \textit{dispatch} heel de tijd wordt geatribueert voor \textit{misprediction}. Bij \textit{commit} worden er nog enkele cycli geattribueerd aan de \textit{back-end stall}. Tot dat de \textit{µop} die de \textit{misprediction} veroorzaak heeft vanvoor in de buffer komt, vanaf dan wordt er ook geattribueerd aan deze \textit{µop} voor de \textit{misprediction} tot de \textit{µop} is geissued (mocht dit nog niet gebeurt zijn) en de penalty die overeenkomt met het  \textit{flushen} gedaan is.
 \end{itemize}
 
-Hoewel deze analyse kan worden uitgebreid naar alle mogelijke scenario's, vormt de voorgaande bespreking reeds een sterke indicatie dat de toewijzing van cycli correct verloopt. Bovendien benadrukt het een duidelijk fundamenteel onderscheid tussen de profileringsinformatie op \textit{dispatch}- en \textit{commit}-niveau. In de daaropvolgende sectie zal de correctheid van de cyclusattributie verder worden onderbouwd en formeel bewezen worden aan de hand van enkele vastgestelde invarianten.
+Hoewel deze analyse kan worden uitgebreid naar alle mogelijke scenario's, vormt de voorgaande bespreking reeds een sterke indicatie dat de toewijzing van cycli correct verloopt. Bovendien benadrukt het een duidelijk fundamenteel onderscheid tussen de profileringsinformatie op \textit{dispatch}- en \textit{commit}-niveau. In de hieropvolgende sectie zal de correctheid van de cyclusattributie verder worden onderbouwd en formeel bewezen worden aan de hand van enkele vastgestelde invarianten.
 \subsection{Invarianten}
 \todo{klopt ook voor commit?}
 \subsubsection{Totaal aantal cycli}
