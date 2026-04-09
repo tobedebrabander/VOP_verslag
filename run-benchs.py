@@ -14,7 +14,7 @@ BENCHMARKS = [
     "STc", "STL2", "STL2b",
 ]
  
-DB_DIR = Path("VOP_verslag/db_noop")
+DB_DIR = Path("VOP_verslag/db_tea")
 PLOT_SCRIPT = "VOP_verslag/viz/plot-hot.py"
 
 
