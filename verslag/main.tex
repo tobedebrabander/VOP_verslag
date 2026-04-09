@@ -145,6 +145,7 @@ Belangrijk om op te merken is dat als latency gelijk is aan één we in een spec
 
 In wat volgt zal er verder worden ingegaan op de implementatie van \textit{PICS} bij \textit{dispatch} en \textit{commit}.
 \subsection{PICS bij \textit{dispatch}}
+\label{subsection:PICS bij dispatch}
 \subsubsection{\textit{dispatch} toestanden}
 \label{subsubsec:dispatch toestanden}
 Bij \textit{dispatch} zijn er vier mogelijke situaties die kunnen optreden. Algemeen kunnen deze eenvoudig onderscheiden worden. Het zal blijken dat dit in de \textit{Sniper-simulator} anders zal werken, maar het is belangrijk om deze situaties eerst te begrijpen voordat er dieper in gegaan wordt op de implementatie in de simulator. De vier situaties zijn:
@@ -274,11 +275,35 @@ Zodra de flush penalty verstreken is, wordt de \textit{µop} uit de datastructuu
 
 Op deze manier wordt de volledige kost van een misprediction correct en volledig geattribueerd.
 
+\subsection{PICS bij commit}
+\subsubsection{commit toestanden en attribuatiepolicy}
+
+De toekenning van latency bij commit gebeurt op basis van het \textit{commit slot} dat de \textit{µop} bevat die zich op dat moment aan het hoofd van het \textit{ROB} bevindt.
+Op basis van de toestand waarin dat \textit{slot} zich bevindt (die bovendien kan afhangen van de toestand van eerdere \textit{slots}) wordt er bepaald aan welke \textit{instructie} latency geattribueerd zal worden.
+Er zijn 4 mogelijke toestanden:
+
+\begin{itemize}
+    \item \textbf{Base}: Het slot bevat een \textit{µop} die klaar is om te committen, en de commitfase kan zonder beperkingen doorgaan.
+    De \textit{µop} wordt gecommit en $1/\textit{commitwidth}$ wordt geattribueerd aan de base component van de corresponderende \textit{statische instructie}.
+    \item \textbf{Frontend stall}: Het slot bevat geen \textit{µop}, wat betekent dat het \textit{ROB} leeg is op het moment dat dit slot geëvalueerd wordt.
+    Deze toestand ontstaat doordat de toevoer van \textit{µop's} vanuit de frontend tijdelijk onderbroken werd (bijvoorbeeld door een \textit{I-cache miss}), waardoor de backend het \textit{ROB} heeft leeggemaakt.
+    Aangezien er geen \textit{µop} beschikbaar is, kan er geen commit plaatsvinden en wordt de commitfase onderbroken.
+    De latency van dit slot en alle volgende \textit{slots} in dezelfde cycle wordt geattribueerd aan de \textit{statische instructie} die verantwoordelijk is voor de frontend stall, i.e. de \textit{µop} die als eerste opnieuw in het \textit{ROB} zal verschijnen.
+    \item \textbf{Backend stall}:
+    Het slot bevat een \textit{µop}, maar deze is nog niet klaar om te committen (bijvoorbeeld omdat de uitvoering nog bezig is of er nog gewacht wordt op het voltooien van een geheugenopperatie).
+    Aangezien commit in-order gebeurt, verhindert deze \textit{µop} dat ook de volgende \textit{slots} in dezelfde cycle kunnen committen.
+    De latency van het huidige slot en alle daaropvolgende \textit{slots} in dezelfde cycle wordt geattribueerd aan de backend component van de \textit{statische instructie} die overeenkomt met deze \textit{µop}.
+    \item \textbf{Misprediction}:
+    Net zoals bij een frontend stall bevat het slot geen \textit{µop} omdat het \textit{ROB} leeg is.
+    In dit geval is dit echter het gevolg van een \textit{branch misprediction}, waarbij de pipeline geflushed werd en de dispatchfase tijdelijk onderbroken was.
+    De latency wordt hier geattribueerd aan de \textit{statische instructie} die de misprediction veroorzaakte.
+\end{itemize}
+
+\subsubsection{Implementatie}
 
 
 
 
-\todo[inline]{technische details (prob weer verwijzingen nodig naar onze sniper apendix of sniper puntje) we kunnen volgens mij hier wel echt diep ingaan op hoe alles werkt, best ook een extra deel waar we dan eerst voor alles uitleggen gewoon voor eens en voor altijd op een gestructureerde en ni overdreven manier hoe ROB enz werkt, waar we opnieuw verwijzen naar sniper omda het daar uiteraard anders werkt, ma dit zal volgens mij samen me testen en resultaten grootste deel zijn dus we mogen uitgebreid zijn.}
 \section{Verificatie}
 \subsection{Handmatig}
 De \textit{Sniper-simulator} biedt de mogelijkheid om tijdens elke iteratie van de hoofdloop (buiten tijdens de sprongen tussen events) de status van de \textit{Re-order Buffer (ROB)} naar de terminal te printen. Door tegelijkertijd de cycli-attributie per instructie weer te geven, kan op kleinschalig niveau geverifieerd worden of de toewijzing van cycli correct verloopt.
@@ -311,13 +336,13 @@ In wat volgt wordt de effectieve output van de \textit{ROB} op enkele kritieke m
    \colorbox{yellow}{Front-end stalled until 239090}, in \colorbox{purple}{I-cache miss}
    RS entries: 0
    Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720: 
-   [  1]  PREROB                          2  EXEC ( 1) 401726: 
-   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
-   [  3]  PREROB                          4  EXEC ( 1) 401739: 
-   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
-   [  5]  PREROB                          6  EXEC ( 1) 401746: 
-   [  6]  PREROB                          7  EXEC ( 1) 401748: 
+   [  0]  PREROB                          1  EXEC ( 1) 401720:
+   [  1]  PREROB                          2  EXEC ( 1) 401726:
+   [  2]  PREROB                          3  EXEC ( 1) 40172c:
+   [  3]  PREROB                          4  EXEC ( 1) 401739:
+   [  4]  PREROB                          5  EXEC ( 1) 40173f:
+   [  5]  PREROB                          6  EXEC ( 1) 401746:
+   [  6]  PREROB                          7  EXEC ( 1) 401748:
 Adding fe_stall to PICS @ Dispatch: 1
 Adding fe_stall to PICS @ Commit: 1
 Adding fe_stall to PICS @ Dispatch: 191
@@ -333,14 +358,14 @@ Hier is duidelijk te zien dat de attributie van cycli correct verloopt: de cycli
     ** ROB state @ 239090  size(0) total(8)
    RS entries: 0
    Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720: 
-   [  1]  PREROB                          2  EXEC ( 1) 401726: 
-   [  2]  PREROB                          3  EXEC ( 1) 40172c: 
-   [  3]  PREROB                          4  EXEC ( 1) 401739: 
-   [  4]  PREROB                          5  EXEC ( 1) 40173f: 
-   [  5]  PREROB                          6  EXEC ( 1) 401746: 
-   [  6]  PREROB                          7  EXEC ( 1) 401748: 
-   [  7]  PREROB                          8  EXEC ( 1) 40174b: 
+   [  0]  PREROB                          1  EXEC ( 1) 401720:
+   [  1]  PREROB                          2  EXEC ( 1) 401726:
+   [  2]  PREROB                          3  EXEC ( 1) 40172c:
+   [  3]  PREROB                          4  EXEC ( 1) 401739:
+   [  4]  PREROB                          5  EXEC ( 1) 40173f:
+   [  5]  PREROB                          6  EXEC ( 1) 401746:
+   [  6]  PREROB                          7  EXEC ( 1) 401748:
+   [  7]  PREROB                          8  EXEC ( 1) 40174b:
 Adding base to PICS @ Dispatch: 0.249998
 Adding base to PICS @ Dispatch: 0.249998
 \colorbox{purple}{Adding base to PICS @ Dispatch : 0.249998}
