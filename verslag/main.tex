@@ -106,14 +106,51 @@ Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Pe
 \section{Context}
 In deze sectie wordt de breedere context waarin dit project kadert uiteengezet. Eerst wordt een fundamenteel concept uit het ontwerp van moderne, superscalaire microprocessors besproken, \textit{out-of-order execution}. Daarna worden ook de \textit{per instruction cycle stacks (PICS)} en de \textit{Sniper-simulator} toegelicht.
 
-\subsection{Out-of-order execution}
-Een \textit{superscalaire} microprocessorkern is een microprocessorkern die meer dan één instructie per klokcyclus kan uitvoeren. Met andere woorden, de kern heeft een \textit{Instructions Per Cycle (IPC)} van meer dan 1. Om meerdere instructies per cyclus uit te kunnen voeren, moet de kern al zeker meerdere instructies per cyclus uit het geheugen halen (\textit{fetchen}) en moet de hardware nodig om een instructie uit te voeren - zogenaamde \textit{execution units} - meerdere malen aanwezig zijn. Daarnaast moet er genoeg \textit{parallellisme} bestaan tussen de aanwezige instructies. Wanneer een instructie het resultaat nodig heeft van een eerdere instructie, moet hun uitvoering voldoende gescheiden zijn zodat het benodigde resultaat beschikbaar is op het moment dat de latere instructie uitgevoerd wordt. Indien er geen afhankelijkheden tussen instructies is, kan hun uitvoering overlapt worden en spreekt men van voldoende parallellisme.
 
-Omdat de hoeveelheid parallellisme tussen opeenvolgende instructies veelal beperkt is, willen we instructies die geen afhankelijkheden hebben uitvoeren op het moment dat er hardware beschikbaar is, onafhankelijk van de programmavolgorde. Dat is \textit{out-of-order execution}. De uitvoering van instructies wordt dus gedicteerd door de afhankelijkheden tussen de instructies en de beschikbaarheid van hardware, en in mindere mate door de volgorde waarin ze in de broncode staan. Zo wordt de hardware maximaal benut, wat de efficiëntie ten goede komt.
+\subsection{Out-of-order execution}
+Een \textit{superscalaire} microprocessorkern is een microprocessorkern die meer dan één instructie per klokcyclus kan uitvoeren. Met andere woorden, de kern heeft een \textit{Instructions Per Cycle (IPC)} van meer dan 1. Om deze efficiëntieverhoging te bewerkstelligen, wordt in zeker mate afstand genomen van de \textit{programmavolgorde}. Dit is, instructies worden uitgevoerd vanaf daar de mogelijkheid toe is, ookal zijn ze nog niet aan de beurt volgens de programmacode. Met \textit{programmavolgorde} wordt de volgorde waarin instructies in de programmacode staan bedoeld.  Daarentegen moet de semantiek van het programma wel behouden worden alsof de instructies in volgorde werden uitegevoerd. Dit is \textit{out-of-order execution}. Een kern die gebruik maakt van \textit{out-of-order execution} wordt een \textit{out-of-order} kern genoemd. Aangezien de meeste moderne \textit{superscalaire} processorkernen \textit{out-of-order} werken, worden de twee termen als verwisselbaar beschouwd.\cite{h&p}
+
+
+\subsubsection{Parallellisme op instructieniveau}
+Om meerdere instructies per cyclus uit te kunnen voeren, moet de kern al zeker meerdere instructies per cyclus uit het geheugen halen (\textit{fetchen}) en moet de hardware nodig om een instructie uit te voeren - zogenaamde \textit{execution units} - meerdere malen aanwezig zijn. Daarnaast moet er genoeg \textit{parallellisme} bestaan tussen de aanwezige instructies. Wanneer een instructie het resultaat nodig heeft van een eerdere instructie, moet hun uitvoering voldoende gescheiden zijn zodat het benodigde resultaat beschikbaar is op het moment dat de latere instructie uitgevoerd wordt. Indien er geen afhankelijkheden tussen instructies is, kan hun uitvoering overlapt worden en spreekt men van voldoende parallellisme.
+
+Het parallellisme tussen instructies binnen een basisblok - i.e. een serie instructies tussen twee spronginstructies - is veelal beperkt.\cite{h&p} Het is dan ook deze beperking die \textit{out-of-order execution} probeert te omzeilen.
+
+
+\subsubsection{De out-of-order pijplijn}
+Een \textit{out-of-order} kern voert meerdere instructies per klokcyclus uit. Daaruit volgt dat er ten alle tijden meerdere instructies in de pijplijn zitten. In welke stadia deze instructies zich kunnen bevinden en hoe de boekhouding gedaan wordt, licht deze sectie verder toe.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{ooo_pipeline.png}
+    \caption{Schematische weergave van een out-of-order pijplijn. (Gebaseerd op \cite{h&p})}
+    \label{fig:ooo-pipeline}
+\end{figure}
+
+Figuur \ref{fig:ooo-pipeline} toont een relatief sterk geabstraheerde voorstelling van een moderne out-of-order pijplijn. Instructies worden afgehaald uit het geheugen (\textit{fetch}) waarna ze gedecodeerd worden aan de frontend. Dit gebeurt in \textit{programmavolgorde}. Op de figuur staan vier pijlen afgebeeld, wat zou impliceren dat er elke klokcyclus vier instructies uit het geheugen gehaald worden, het maximaal aantal instructies dat uit het geheugen kan gehaald worden verschilt echter per \textit{microarchitectuur}.
+
+\textit{Dispatch} is de fase waar de instructie het \textit{out-of-order} venster binnenkomt. Vanaf hier wordt geen rekening meer gehouden met de \textit{programmavolgorde}. Er wordt een slot in de \textit{reorder buffer} gealloceerd voor de instructie en de instructie zal uitgevoerd worden vanaf alle afhankelijke instructies klaar zijn en de hardware beschikbaar is. Net als bij het \textit{fetchen} kunnen er elke cyclus meerdere instructies dispatchen. Hoeveel dat er maximaal zijn hangt opnieuw af van welke \textit{microarchitectuur} gebruikt wordt. Bemerk dat de slots in de \textit{reorder buffer} in de \textit{programmavolgorde} van de corresponderende instructies staan.
+
+Elke cyclus probeert de hardware de oudste instructies te \textit{committen}. Dit wil zeggen dat het effect van de instructie zichtbaar wordt in de \textit{architecturale staat}. Het resultaat kan bijvoorbeeld beschikbaar zijn in een register, of in het geheugen, en de software kan er nu gebruik van maken. Het bijhorende slot in de \textit{reorder buffer} wordt vrijgegeven. Bemerk dat \textit{commit} terug in \textit{programmavolgorde} gebeurt.
+
+
+\subsubsection{Reorder buffer}
+De \textit{reorder buffer (ROB)} is de essentiële structuur die het mogelijk maakt om \textit{out-of-order execution} mogelijk te maken en ondertussen de sequentiële semantiek te behouden. De \textit{ROB} is \textit{First-in, first out (FIFO)}. Bij \textit{dispatch} wordt een slot ingenomen. Dat slot houdt de status van alle andere instructies waarvan de instructie afhankelijk is bij. Als alle afhankelijkheden uitgevoerd zijn, is de instructie klaar voor uitvoering. Het resultaat wordt dan ook ingevoerd in het \textit{ROB}-slot. Wanneer een instructie de laatste in de \textit{ROB} is impliceert dit dat het programma in zijn uitvoering aan die instructie zit, en kan de hardware de instructie \textit{committen}. Het bijhorende \textit{ROB}-slot wordt dan vrijgegeven alsook alle hardware die de instructie gebruikte voor zijn uitvoering. Instructies die eerder dan nodig uitgevoerd worden om het processor-gebruik te maximalizeren, worden zo gebufferd.
+
+
+\subsubsection{Onderbrekingen van de ideale insturctiestroom}
+In het ideale, hypothetische geval worden elke cyclus \(n\) instructies afgehaald uit het geheugen, \textit{dispatchen} er \(n\) instructies en \textit{committen} er \(n\) instructies. Dit gebruikt de onrealistische veronderstelling dat elke instructie na één cyclus beschikbaar is, dat elke instructie in één cyclus kan uitgevoerd worden en dat er geen afhankelijkheden tussen instructies zijn. Er zijn talloze redenen waarom de hardware de stroom van instructies onderbreekt.
 
 
 \subsection{Per Instruction Cycle Stacks}
-De recent gepubliceerde paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} introduceert de \textit{Per Instruction Cycle Stacks (PICS)}. \textit{PICS} vizualiseren de prestatie van computerapplicaties. Het kernidee is dat elke cyclus die een core spendeert aan het uitvoeren van een programma geattribueerd wordt aan de correcte \textit{statische instructie} uit de programmacode. Het is dit correct attribueren dat aandacht vereist om een zivolle methode te zijn.
+De recent gepubliceerde paper \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} introduceert de \textit{Per Instruction Cycle Stacks (PICS)}. \textit{PICS} vizualiseren de prestatie van computerapplicaties. Het kernidee is dat elke cyclus die een core spendeert aan het uitvoeren van een programma geattribueerd wordt aan de correcte \textit{statische instructie} uit de programmacode. Met andere woorden, als de uitvoering van het programma vertraging oploopt, wordt deze vertraging in cycli geattribueerd aan de instructie die de vertraging heeft veroorzaakt. Het is dit correct attribueren dat aandacht vereist om een zivolle methode te zijn. Daarom worden nu enkele aspecten besproken die cruciaal zijn om correct te attribueren.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{example_pics.png}
+    \caption{Voorbeeld van PICS bij dispatch en bij commit voor vier instructies}
+    \label{fig:example_pics}
+\end{figure}
 
 \subsubsection{Tijdsproportioneel}
 In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli aan statische instructies van groot belang (hierna kortweg instructies genoemd, tenzij anders vermeld). Het is cruciaal dat deze profileringsinfomatie tijdsproportioneel is: het belang van een instructie in het uiteindelijke profiel moet evenredig zijn aan de relatieve bijdrage van die instructie aan de totale uitvoeringstijd. Dit vereist een nauwkeurige toewijzing — zonder cycli toe te kennen aan instructies die niet hebben bijgedragen aan de uitvoeringstijd, en zonder cycli te onthouden aan instructies die dat wel hebben gedaan.
@@ -122,15 +159,15 @@ In de uiteindelijke profileringsinfomatie is een correcte toewijzing van cycli a
 Naast een correcte toewijzing van cycli aan instructies is het eveneens van belang te begrijpen waardoor die cycli worden veroorzaakt. Per instructie dient duidelijk te zijn of de bijbehorende cycli het gevolg zijn van bijvoorbeeld een cache-misser, een branch-voorspellingsfout, een resource-conflict, of een andere oorzaak. Dit inzicht is waardevol omdat het de onderliggende oorzaken van prestatieproblemen blootlegt en ontwikkelaars in staat stelt gerichte optimalisatiemogelijkheden te identificeren.
 
 \subsection{Sniper-simulator}
-De Sniper-simulator is een softwaregebaseerde simulator voor de \textit{x86 architectuur} die parallelle programma's kan simuleren. De simulator probeert de afweging te maken tussen simulatiesnelheid en nauwkeurigheid. Hoe men deze afweging maakt, wordt nu verder toegelicht.
+De Sniper-simulator is een softwaregebaseerde simulator voor de \textit{x86 architectuur} die parallelle programma's kan simuleren. De simulator probeert de afweging te maken tussen simulatiesnelheid en nauwkeurigheid.
 
-\subsubsection{Interval Simulatie}
-Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moeten gebeuren. Dit zou echter ten koste gaan van de simulatiesnelheid, wat het praktisch gebruik niet werkbaar zou maken. Eén van de technieken om beiden te combineren is \textit{Interval simulatie}. De uitvoering van een programma door een processorkern kan gezien worden als een stroom van instructies die onderbroken wordt door \textit{miss events} zoals \textit{cache misses}, \textit{foutieve sprongvoorspellingen}, etc. De simulator kan dus werken op een hoger abstractieniveau door tussen deze \textit{miss events} te springen en ertussen een constante stroom van instructies aan te nemen. Alhoewel deze techniek de eerder vermelde voordelen heeft, bemoeilijkt het de implementatie van \textit{PICS}'s.
+Om maximale nauwkeurigheid te bereiken, zou de simulatie cyclus per cyclus moeten gebeuren. Dit zou echter ten koste gaan van de simulatiesnelheid, wat het praktisch gebruik niet werkbaar zou maken. Eén van de technieken om beiden te combineren is \textit{interval simulatie}. De uitvoering van een programma door een processorkern kan gezien worden als een stroom van instructies die onderbroken wordt door \textit{miss events} zoals \textit{cache misses}, \textit{foutieve sprongvoorspellingen}, etc. De simulator kan dus werken op een hoger abstractieniveau door tussen deze \textit{miss events} te springen en ertussen een constante stroom van instructies aan te nemen. Alhoewel deze techniek de eerder vermelde voordelen heeft, bemoeilijkt het de implementatie van \textit{PICS}'s.
 
 
 \newpage
 \section{Doelstellingen}
 Zoals eerder vermeld bestaan er reeds verschillende profileringsmethoden die informatie kunnen genereren over de prestaties van applicaties, maar deze voldoen niet altijd tegelijkertijd aan beide vereisten voor een goede profileringsmethode (Tijdsproportioneel en Correcte assignatie). Daarnaast is het duidelijk dat profileren zowel bij dispatch als bij commit belangrijk is, aangezien dit vaak een complementair beeld oplevert.
+
 Het doel van dit project is dan ook om PICS te implementeren op beide momenten binnen de Sniper-simulator, en dit te valideren aan de hand van gerichte benchmarktests. De geïmplementeerde methoden zullen vervolgens worden geëvalueerd en bijgestuurd op basis van verkregen resultaten.
 
 
@@ -415,15 +452,18 @@ Nu kan er gemakkelijk worden ingezien dat als de bovenstaande varianten kloppen 
 
 \renewcommand{\refname}{Referenties}
 \begin{thebibliography}{9}
-\bibitem{sniper}
-    The Sniper Multi-Corew Simulator \newline
-    \url{https://snipersim.org}
+
+\bibitem{h&p}
+    J. L. Hennessy, D. A. Patterson, and C. Kozyrakis, Computer Architecture: A Quantitative Approach, 7th ed. Morgan Kaufmann, 2025
 
 \bibitem{dip2026}
-    Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch \newline
-    Silvio Campelo de Santana, Joseph Rogers, Lieven Eeckhout, Magnus Jahre \newline
-    ASPLOS 2026 \newline
-    \url{https://jahre.folk.ntnu.no/papers/dip-asplos26-aam.pdf}
+    S. H. Campelo de Santana, J. Rogers, L. Eeckhout, and M. Jahre, "Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch," in Proc. 31st ACM Int. Conf. Architectural Support for Programming Languages and Operating Systems (ASPLOS), Pittsburgh, PA, USA, Mar. 2026, pp. 361–376.
+
+\bibitem{sniper}
+    T. E. Carlson, W. Heirman, S. Eyerman, I. Hur, and L. Eeckhout, "An Evaluation of High-Level Mechanistic Core Models," ACM Trans. Archit. Code Optim., vol. 11, no. 1, article 5, Apr. 2014, doi: 10.1145/2629677.
+
+\bibitem{sniper_web}
+    T. E. Carlson, W. Heirman, and L. Eeckhout, "The Sniper Multi-Core Simulator," snipersim.org. [Online]. Available: https://snipersim.org. [Accessed: Apr. 12, 2026].
 
 \bibitem{x86-instructieset}
     (2022, 30 oktober). x86-instructieset. \newline
