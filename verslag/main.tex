@@ -18,6 +18,7 @@
 \graphicspath{{figures/}}
 
 \usepackage{float}
+\usepackage{pgfgantt}
 
 \usepackage{listings}
 \usepackage{xcolor}
@@ -198,7 +199,37 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
 
 
 \section{Planning}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \begin{ganttchart}[
+            hgrid,
+            vgrid,
+            x unit=0.8cm,
+            y unit chart=0.65cm
+        ]{1}{12}
+            \gantttitle{Planning (weken)}{12} \\
+            \gantttitlelist{1,...,12}{1} \\
+            
+            \ganttgroup{Fase 1: PICS @ Dispatch}{1}{6} \\
+            \ganttbar{Implementatie: Base}{1}{2} \\
+            \ganttbar{Implementatie: Andere componenten}{3}{4} \\
+            \ganttbar{Verificatie: Benchmarks}{5}{5} \\
+            \ganttbar{Verificatie: Invarianten}{6}{6} \\
+            
+            \ganttgroup{Fase 2: PICS @ Commit}{7}{10} \\
+            \ganttbar{Implementatie: Alle componenten}{7}{8} \\
+            \ganttbar{Verificatie: Benchmarks}{9}{9} \\
+            \ganttbar{Verificatie: Invarianten}{10}{10} \\
+            
+            \ganttgroup{Fase 3: Verslag}{8}{12} \\
+        \end{ganttchart}
+    \end{tikzpicture}
+    \caption{Projectplanning}
+    \label{fig:planning}
+\end{figure}
 
+{\raggedleft\footnotesize\textit{Toelichting: Dankzij de kennis, over de simulator en over de aanpak om PICS te implementeren, uit de dispatch-implementatie, kon er bij PICS @ Commit onmiddellijk alle componenten tegelijk geïmplementeerd worden, al is de aanpak inhoudelijk niet hetzelfde.}\par}
 
 \section{Technische bespreking}
 Deze sectie zet de belangrijkste ideëen van de implementatie binnen de software uiteen. Er wordt een hoog niveau beeld gegeven van hoe de simulatie ten werk gaat en hoe de \textit{PICS} geïmplementeerd worden.
