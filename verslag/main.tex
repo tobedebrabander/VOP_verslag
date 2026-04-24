@@ -150,6 +150,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \todo[inline]{Hier springen we van instructies naar µops. Uitleggen wat het verschil is, of gewoon altijd over instructies spreken?}
 
 \subsubsection{Componenten bij dispatch}
+\label{subsubsection:dispatch toestanden}
 \begin{itemize}
     \item \textbf{Base}: Er treden geen problemen op, alle \textit{dispatchslots} worden ingenomen.
 
@@ -161,6 +162,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \end{itemize}
 
 \subsubsection{Componenten bij commit}
+\label{subsubsection:commit toestanden}
 \begin{itemize}
     \item \textbf{Compute}: De voorste \textit{µop} in de \textit{ROB} is klaar om te committen, en de commitfase kan zonder beperkingen doorgaan.
 
@@ -214,7 +216,7 @@ In wat volgt zal er verder worden ingegaan op de implementatie van \textit{PICS}
 \subsection{Implementatie van PICS bij \textit{dispatch}}
 \label{subsection:PICS bij dispatch}
 
-Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot.
+Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:dispatch toestanden}).
 Op deze manier wordt elke dispatch-cycle volledig gealloceerd: ofwel integraal aan één \textit{statische instructie}, ofwel opgesplitst over meerdere \textit{statische instructies}.
 
 In \textit{Sniper} wordt het mechanisme van \textit{dispatch-slots} uitgebreid. Voor elke \textit{µop}, toegewezen aan een \textit{slot} wordt gecontroleerd of de backend voldoende resources vrij heeft om de \textit{µop} te ontvangen.
@@ -237,16 +239,22 @@ De \textit{µop} kan bijgevolg worden gedispatched en de dispatch-stage blijft a
 Bij dispatch wordt een fractie van de cycle, namelijk \(1 / \textit{dispatchwidth}\), toegewezen aan de \textit{base component} van de \textit{statische instructie} die overeenkomt met deze \textit{dynamische µop}. Elke gedispatchte \textit{dynamische µop} draagt dus precies $1 / \textit{dispatchwidth}$ bij aan deze base component.
 Aangezien een \textit{statische instructie} meerdere keren kan worden uitgevoerd en kan bestaan uit meerdere \textit{µop's}, geldt uiteindelijk:
 
-\[
-\textit{base component} =
-(N_{\text{exec}} \cdot N_{\mu op}) \cdot \frac{1}{\textit{dispatchwidth}}
-\]
+\begin{equation}
+    \text{PICS}_{\text{b}} = (N_{\text{e}} \cdot N_{\mu}) \cdot \frac{1}{\textit{dispatchwidth}}
+    \label{eq:pics_base}
+\end{equation}
 
-Hierbij stellen $N_{\text{exec}}$ en $N_{\mu op}$ respectievelijk het aantal uitvoeringen van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie bestaat voor.
+Hierbij stellen $N_{\text{e}}$ en $N_{\mu}$ respectievelijk het aantal uitvoeringen
+van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie
+bestaat voor. $\text{PICS}_{\text{b}}$ staat voor de base component van de
+\textit{statische instructie}..
 
-Na het dispatchen van de \textit{µop} en het toewijzen van deze fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
+
+
+Na het dispatchen van de \textit{µop} en het toewijzen van de fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
 
 \paragraph{2:}
+\label{paragraph:basismechanisme PICS}
 In dit geval ondervindt de \textit{µop} een van de drie mogelijke problemen die de dispatch fase zal onderbreken: een \textit{i-cache miss} (frontend stall), een resource conflict in de backend (backend stall), of een mispredicted branch instructie (misprediction).
 Voor elke oorzaak wordt hetzelfde basismechanisme gehanteerd. Wanneer een \textit{µop} een stall veroorzaakt, wordt deze samen met de stall oorzaak opgeslagen in een datastructuur. Vanaf dat moment wordt de dispatch fase volledig geblokkeerd en kunnen er geen nieuwe \textit{µop's} meer gedispatched worden.
 Alle \textit{dispatch slots} blijven gedurende deze periode ongebruikt en hun latency moet bijgevolg geattribueerd worden.
@@ -262,7 +270,7 @@ De fractie van de dispatch cycle die overeenkomt met deze ongebruikte slots (in 
 Samen met de reeds geattribueerde base component van het eerste dispatch slot wordt zo de volledige dispatch cycle geaccount.
 
 
-Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
+Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later (zie \ref{section: verificatie}) geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
 In wat volgt zullen de 3 gevallen verder genuanceerd worden.
 
 
@@ -303,8 +311,12 @@ Op deze manier wordt de volledige kost van een misprediction correct en volledig
 
 \subsection{Implementatie van PICS bij commit}
 
+Het doel van de implementatie is gelijkaardig aan het doel bij \ref{subsection:PICS bij dispatch}. Het verschil is dat bij commit, de latentie van \textit{commit-slots} (1/commitbreedte) zullen worden toegewezen i.p.v. de latentie van \textit{dispatch-slots}
+en dat de toestanden waarin een \textit{commit-slot} zich kan bevinden (zie \ref{subsubsection:commit toestanden}) verschillend zijn van de toestanden bij dispatch.
+
 
 \section{Verificatie}
+\label{section: verificatie}
 Om de correctheid van de implementatie van PICS te verifiëren, wordt er gebruik gemaakt van handmatige verificatiemethoden alsook invarianten. Deze worden nu besproken.
 
 \subsection{Handmatig}
@@ -392,6 +404,18 @@ Het is gemakkelijk in te zien dat het totale aantal cycli tussen de start en het
 
 Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
 \subsubsection{Base}
+Voor de uitvoering van het programma geldt de volgende invariant:
+
+\begin{equation}
+    \sum_{i=0}^{N_s} \text{PICS}_{b,i} = N_d \cdot \frac{1}{\textit{dispatchwidth}}
+    \label{eq:pics_invariant}
+\end{equation}
+
+$N_s$ stelt het aantal statische instructies in het programma voor, $N_d$
+het totaal aantal dynamisch uitgevoerde \textit{µop's}, en $\text{PICS}_{b,i}$
+de base component van de $i$-de statische instructie zoals gedefinieerd in
+(\ref{eq:pics_base}).
+
 \subsubsection{Front-end stalls}
 De invariant hier is dat zo goed als alle cycli geattribueerd aan een \textit{front-end stall} veroorzaakt zijn door een \textit{instruction cache miss}. Hieronder zal er dan ook een \textit{microbenchmark} worden besproken die specifiek ontworpen is om dit te testen.
 \todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
