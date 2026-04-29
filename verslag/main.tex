@@ -88,24 +88,16 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Het afnemende tempo van Moore's law en Dennard scaling, gecombineerd met een aanhoudende vraag naar steeds performantere applicaties,
-heeft de nood aan betere softwareprestaties aanzienlijk doen toenemen. Deze verbeteringen worden vandaag voornamelijk gerealiseerd
-door het inzetten van gespecialiseerde hardware-acceleratoren, die het mogelijk maken om het aanwezige parallellisme in programma's maximaal te benutten.
+Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Met de toenemende adoptie en mogelijkheden van deze hardware groeit dus ook de impact van niet-versnelbare code op de totale performantie van een applicatie. Softwareontwikkelaars zullen in de toekomst dus steeds meer aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
 
-Volgens Amdahl's law neemt echter het relatieve belang van CPU-prestaties toe naarmate een groter deel van de code niet kan worden versneld via dergelijke acceleratoren.
-Met de toenemende adoptie en mogelijkheden van deze hardware groeit dus ook de impact van niet-versnelbare code op de totale performantie van een applicatie.
-Dit impliceert dat softwareontwikkelaars in de toekomst steeds meer aandacht zullen moeten besteden aan het optimaliseren van CPU-prestaties.
-
-In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator.
-Deze simulator stelt ontwikkelaars in staat om een gedetailleerd prestatieprofiel van een applicatie op te stellen, wat gerichte optimalisaties mogelijk maakt.
-Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Daarnaast wordt de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
+In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator, wat softwareontwikkelaars in staat zou moeten stellen om de CPU-prestatie van hun code te visualizeren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Die de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
 
 
 \newpage
 
 
 \section{Context}
-In deze sectie wordt de bredere context waarin dit project kadert uiteengezet. Eerst wordt een fundamenteel concept uit het ontwerp van moderne, \textit{superscalaire} microprocessors besproken, \textit{out-of-order (OoO) execution}. Daarna worden ook de \textit{PICS} en de \textit{Sniper-simulator} toegelicht.
+In deze sectie wordt de breedere context waarin dit project kadert uiteengezet. Eerst wordt een fundamenteel concept uit het ontwerp van moderne, superscalaire microprocessors besproken, \textit{out-of-order execution}. Daarna worden ook de \textit{per-instruction cycle stacks} en de \textit{Sniper-simulator} toegelicht.
 
 
 \subsection{Out-of-order execution}
@@ -212,18 +204,18 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
         ]{1}{12}
             \gantttitle{Planning (weken)}{12} \\
             \gantttitlelist{1,...,12}{1} \\
-            
+
             \ganttgroup{Fase 1: PICS @ Dispatch}{1}{6} \\
             \ganttbar{Implementatie: Base}{1}{2} \\
             \ganttbar{Implementatie: Andere componenten}{3}{4} \\
             \ganttbar{Verificatie: Benchmarks}{5}{5} \\
             \ganttbar{Verificatie: Invarianten}{6}{6} \\
-            
+
             \ganttgroup{Fase 2: PICS @ Commit}{7}{10} \\
             \ganttbar{Implementatie: Alle componenten}{7}{8} \\
             \ganttbar{Verificatie: Benchmarks}{9}{9} \\
             \ganttbar{Verificatie: Invarianten}{10}{10} \\
-            
+
             \ganttgroup{Fase 3: Verslag}{8}{12} \\
         \end{ganttchart}
     \end{tikzpicture}
