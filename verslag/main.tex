@@ -88,24 +88,16 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Het afnemende tempo van Moore's law en Dennard scaling, gecombineerd met een aanhoudende vraag naar steeds performantere applicaties,
-heeft de nood aan betere softwareprestaties aanzienlijk doen toenemen. Deze verbeteringen worden vandaag voornamelijk gerealiseerd
-door het inzetten van gespecialiseerde hardware-acceleratoren, die het mogelijk maken om het aanwezige parallellisme in programma's maximaal te benutten.
+Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Als de adoptie en mogelijkheden van deze hardware groeit zal de impact van niet-versnelbare code op de totale performantie van een applicatie toenemen. Softwareontwikkelaars zullen in de toekomst dus steeds aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
 
-Volgens Amdahl's law neemt echter het relatieve belang van CPU-prestaties toe naarmate een groter deel van de code niet kan worden versneld via dergelijke acceleratoren.
-Met de toenemende adoptie en mogelijkheden van deze hardware groeit dus ook de impact van niet-versnelbare code op de totale performantie van een applicatie.
-Dit impliceert dat softwareontwikkelaars in de toekomst steeds meer aandacht zullen moeten besteden aan het optimaliseren van CPU-prestaties.
-
-In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator.
-Deze simulator stelt ontwikkelaars in staat om een gedetailleerd prestatieprofiel van een applicatie op te stellen, wat gerichte optimalisaties mogelijk maakt.
-Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Daarnaast wordt de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
+In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator, wat softwareontwikkelaars in staat zou moeten stellen om de CPU-prestatie van hun code te visualizeren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Die de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
 
 
 \newpage
 
 
 \section{Context}
-In deze sectie wordt de bredere context waarin dit project kadert uiteengezet. Eerst wordt een fundamenteel concept uit het ontwerp van moderne, \textit{superscalaire} microprocessors besproken, \textit{out-of-order (OoO) execution}. Daarna worden ook de \textit{PICS} en de \textit{Sniper-simulator} toegelicht.
+In deze sectie wordt de breedere context waarin dit project kadert uiteengezet. Eerst wordt een fundamenteel concept uit het ontwerp van moderne, superscalaire microprocessors besproken, \textit{out-of-order execution}. Daarna worden ook de \textit{per-instruction cycle stacks} en de \textit{Sniper-simulator} toegelicht.
 
 
 \subsection{Out-of-order execution}
@@ -151,6 +143,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \todo[inline]{Hier springen we van instructies naar µops. Uitleggen wat het verschil is, of gewoon altijd over instructies spreken?}
 
 \subsubsection{Componenten bij dispatch}
+\label{subsubsection:dispatch toestanden}
 \begin{itemize}
     \item \textbf{Base}: Er treden geen problemen op, alle \textit{dispatchslots} worden ingenomen.
 
@@ -162,6 +155,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \end{itemize}
 
 \subsubsection{Componenten bij commit}
+\label{subsubsection:commit toestanden}
 \begin{itemize}
     \item \textbf{Compute}: De voorste \textit{µop} in de \textit{ROB} is klaar om te committen, en de commitfase kan zonder beperkingen doorgaan.
 
@@ -210,18 +204,18 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
         ]{1}{12}
             \gantttitle{Planning (weken)}{12} \\
             \gantttitlelist{1,...,12}{1} \\
-            
+
             \ganttgroup{Fase 1: PICS @ Dispatch}{1}{6} \\
             \ganttbar{Implementatie: Base}{1}{2} \\
             \ganttbar{Implementatie: Andere componenten}{3}{4} \\
             \ganttbar{Verificatie: Benchmarks}{5}{5} \\
             \ganttbar{Verificatie: Invarianten}{6}{6} \\
-            
+
             \ganttgroup{Fase 2: PICS @ Commit}{7}{10} \\
             \ganttbar{Implementatie: Alle componenten}{7}{8} \\
             \ganttbar{Verificatie: Benchmarks}{9}{9} \\
             \ganttbar{Verificatie: Invarianten}{10}{10} \\
-            
+
             \ganttgroup{Fase 3: Verslag}{8}{12} \\
         \end{ganttchart}
     \end{tikzpicture}
@@ -245,7 +239,7 @@ In wat volgt zal er verder worden ingegaan op de implementatie van \textit{PICS}
 \subsection{Implementatie van PICS bij \textit{dispatch}}
 \label{subsection:PICS bij dispatch}
 
-Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot.
+Het doel van de implementatie is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{statische instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:dispatch toestanden}).
 Op deze manier wordt elke dispatch-cycle volledig gealloceerd: ofwel integraal aan één \textit{statische instructie}, ofwel opgesplitst over meerdere \textit{statische instructies}.
 
 In \textit{Sniper} wordt het mechanisme van \textit{dispatch-slots} uitgebreid. Voor elke \textit{µop}, toegewezen aan een \textit{slot} wordt gecontroleerd of de backend voldoende resources vrij heeft om de \textit{µop} te ontvangen.
@@ -268,16 +262,22 @@ De \textit{µop} kan bijgevolg worden gedispatched en de dispatch-stage blijft a
 Bij dispatch wordt een fractie van de cycle, namelijk \(1 / \textit{dispatchwidth}\), toegewezen aan de \textit{base component} van de \textit{statische instructie} die overeenkomt met deze \textit{dynamische µop}. Elke gedispatchte \textit{dynamische µop} draagt dus precies $1 / \textit{dispatchwidth}$ bij aan deze base component.
 Aangezien een \textit{statische instructie} meerdere keren kan worden uitgevoerd en kan bestaan uit meerdere \textit{µop's}, geldt uiteindelijk:
 
-\[
-\textit{base component} =
-(N_{\text{exec}} \cdot N_{\mu op}) \cdot \frac{1}{\textit{dispatchwidth}}
-\]
+\begin{equation}
+    \text{PICS}_{\text{b}} = (N_{\text{e}} \cdot N_{\mu}) \cdot \frac{1}{\textit{dispatchwidth}}
+    \label{eq:pics_base}
+\end{equation}
 
-Hierbij stellen $N_{\text{exec}}$ en $N_{\mu op}$ respectievelijk het aantal uitvoeringen van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie bestaat voor.
+Hierbij stellen $N_{\text{e}}$ en $N_{\mu}$ respectievelijk het aantal uitvoeringen
+van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie
+bestaat voor. $\text{PICS}_{\text{b}}$ staat voor de base component van de
+\textit{statische instructie}..
 
-Na het dispatchen van de \textit{µop} en het toewijzen van deze fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
+
+
+Na het dispatchen van de \textit{µop} en het toewijzen van de fractie van de dispatch cycle aan de base component, selecteert de dispatch-stage de volgende \textit{µop} en wordt het proces herhaald.
 
 \paragraph{2:}
+\label{paragraph:basismechanisme PICS}
 In dit geval ondervindt de \textit{µop} een van de drie mogelijke problemen die de dispatch fase zal onderbreken: een \textit{i-cache miss} (frontend stall), een resource conflict in de backend (backend stall), of een mispredicted branch instructie (misprediction).
 Voor elke oorzaak wordt hetzelfde basismechanisme gehanteerd. Wanneer een \textit{µop} een stall veroorzaakt, wordt deze samen met de stall oorzaak opgeslagen in een datastructuur. Vanaf dat moment wordt de dispatch fase volledig geblokkeerd en kunnen er geen nieuwe \textit{µop's} meer gedispatched worden.
 Alle \textit{dispatch slots} blijven gedurende deze periode ongebruikt en hun latency moet bijgevolg geattribueerd worden.
@@ -293,7 +293,7 @@ De fractie van de dispatch cycle die overeenkomt met deze ongebruikte slots (in 
 Samen met de reeds geattribueerde base component van het eerste dispatch slot wordt zo de volledige dispatch cycle geaccount.
 
 
-Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
+Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later (zie \ref{section: verificatie}) geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
 In wat volgt zullen de 3 gevallen verder genuanceerd worden.
 
 
@@ -333,6 +333,9 @@ Zodra de flush penalty verstreken is, wordt de \textit{µop} uit de datastructuu
 Op deze manier wordt de volledige kost van een misprediction correct en volledig geattribueerd.
 
 \subsection{Implementatie van PICS bij commit}
+
+Het doel van de implementatie is gelijkaardig aan het doel bij \ref{subsection:PICS bij dispatch}. Het verschil is dat bij commit, de latentie van \textit{commit-slots} (1/commitbreedte) zullen worden toegewezen i.p.v. de latentie van \textit{dispatch-slots}
+en dat de toestanden waarin een \textit{commit-slot} zich kan bevinden (zie \ref{subsubsection:commit toestanden}) verschillend zijn van de toestanden bij dispatch.
 
 
 \section{Resultaten}
@@ -463,6 +466,18 @@ Het is gemakkelijk in te zien dat het totale aantal cycli tussen de start en het
 
 Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
 \subsubsection{Base}
+Voor de uitvoering van het programma geldt de volgende invariant:
+
+\begin{equation}
+    \sum_{i=0}^{N_s} \text{PICS}_{b,i} = N_d \cdot \frac{1}{\textit{dispatchwidth}}
+    \label{eq:pics_invariant}
+\end{equation}
+
+$N_s$ stelt het aantal statische instructies in het programma voor, $N_d$
+het totaal aantal dynamisch uitgevoerde \textit{µop's}, en $\text{PICS}_{b,i}$
+de base component van de $i$-de statische instructie zoals gedefinieerd in
+(\ref{eq:pics_base}).
+
 \subsubsection{Front-end stalls}
 De invariant hier is dat zo goed als alle cycli geattribueerd aan een \textit{front-end stall} veroorzaakt zijn door een \textit{instruction cache miss}. Hieronder zal er dan ook een \textit{microbenchmark} worden besproken die specifiek ontworpen is om dit te testen.
 \todo[inline]{microbenchmark da we samen hadden gedaan met schalen}
