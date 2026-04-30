@@ -335,87 +335,127 @@ Op deze manier wordt de volledige kost van een misprediction correct en volledig
 \subsection{Implementatie van PICS bij commit}
 
 
-\section{Verificatie}
-Om de correctheid van de implementatie van PICS te verifiëren, wordt er gebruik gemaakt van handmatige verificatiemethoden alsook invarianten. Deze worden nu besproken.
-
-\subsection{Handmatig}
-\label{handmatige verificatie}
-De \textit{Sniper-simulator} biedt de mogelijkheid om tijdens elke iteratie van de hoofdloop (buiten tijdens de sprongen tussen events) de status van de \textit{Re-order Buffer (ROB)} naar de terminal te printen. Door tegelijkertijd de cycli-attributie per instructie weer te geven, kan op kleinschalig niveau geverifieerd worden of de toewijzing van cycli correct verloopt.
-
-Voor deze handmatige verificatie maken we gebruik van een \textit{microbenchmark} (waarover later meer details volgen), die gestructureerd is zoals hieronder weergegeven:
+\section{Resultaten}
+Na het verifiëren van de \textit{PICS} kunnen enkele \textit{microbenchmarks} geanalyseerd en eventueel geoptimaliseerd worden. Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit. In wat volgt worden twee zulke \textit{benchmarks} besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
+\subsection{Dispatch}
+\label{dispatch}
+Als eerste \textit{microbenchmark} wordt er gekeken naar één met de volgende structuur:
 \begin{lstlisting}[language=C]
-int loop(int zero) {
-  int t = 0,i,iter;
-  for(iter=0; iter < ITERS; ++iter) {
-    for(i=0; i < STEP + zero; i+=1) {
-      if(randArr[i])  {
-        t+=3+3*t;
-      } else {
-        t-=1-5*t;
-      }
+    ...
+    for (i = 0; i < ITER + zero; ++i) {
+        if (randArr[i]) {
+            index = (i * STRIDE) % ARRAY_SIZE;
+            t += data[index];
+        }   
     }
-  }
-  return t;
-}
+    ...
 \end{lstlisting}
-\todo[inline]{verwijzing naar microbenchmarks github}
-Bij de uitvoering van deze code worden prestatieverliezen door verschillende factoren verwacht. Enkele cycli zullen verloren gaan aan \textit{mispredictions}, al blijft dit aantal beperkt aangezien de \textit{randArr}-array een alternerend patroon bevat, wat resulteert in eenvoudig te voorspellen lusgedrag. Daarnaast zullen onvermijdelijk \textit{front-end stalls} optreden, onder meer door \textit{instruction cache misses} bij de eerste uitvoering van een instructie. Ook \textit{back-end stalls} zijn mogelijk, bijvoorbeeld wanneer interne buffers en queues vol raken. Omdat prestatieverliezen zich op verschillende plaatsen in de pijplijn kunnen manifesteren, is het cruciaal om de correcte toewijzing van \textit{PICS} zowel bij \textit{dispatch} als bij \textit{commit} te controleren; deze twee perspectieven bieden immers een complementair beeld (zie ?).
+Bij de uitvoering van deze code wordt voornamelijk een prestatieverlies verwacht door \textit{foute sprongvoorspellingen}, aangezien de sprongconditie afhankelijk is van een willekeurige waarde. Om te bepalen welke instructie hier exact verantwoordelijk voor is, wordt de gegenereerde assembly-code geanalyseerd:
+\begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jnz,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx}]
+    ...
+  401780:       cmpb   $0x0,(%rcx)
+  401783:       je     40179f <loop+0x5f>
+  401785:       mov    %eax,%edx
+  401787:       imul   %r9,%rdx
+  40178b:       shr    $0x22,%rdx
+  40178f:       lea    (%rdx,%rdx,4),%r8d
+  401793:       mov    %eax,%edx
+  401795:       sub    %r8d,%edx
+  401798:       movslq %edx,%rdx
+  40179b:       add    -0x28(%rsp,%rdx,4),%esi
+    ...
+\end{lstlisting}
+De interessante instructie is \textbf{je \textbar\ 401783}, de branch-instructie waarvan de conditie afhangt van \texttt{randArr[i]}. Indien \texttt{randArr[i]} gelijk is aan nul wordt de sprong genomen en de berekening van \texttt{t} overgeslagen. In het andere geval worden de instructies van \textbf{401785} tot \textbf{40179b} uitgevoerd, waarbij \texttt{index} berekend wordt en \texttt{t} geaccumuleerd wordt. Beide paden komen samen op \textbf{40179f}, waarna de volgende iteratie begint.
 
-In wat volgt wordt de effectieve output van de \textit{ROB} op enkele kritieke momenten ge-analyseerd.
+Omdat \texttt{randArr} willekeurige waarden bevat, kan de \textit{branch predictor} geen patroon herkennen en zal er frequent een foute voorspelling gemaakt worden. Er wordt dan ook verwacht dat \textbf{je \textbar\ 401783} de instructie is met de meeste geattribueerde cycli, voornamelijk door \textit{mispredictions}. Figuur \ref{fig:PSum} toont de \textit{PICS} bij \textit{dispatch} en bij \textit{commit}. Bij \textit{dispatch} volgt de \textit{PICS} de verwachtingen en wordt \textbf{je \textbar\ 401783} correct aangeduid als bottleneck. Opmerkelijk is dat dit bij \textit{commit} niet het geval is: daar wordt de bottleneck gemaskeerd door \textbf{cmp \textbar\ 401780}, die als geheugentoegang een \textit{backend stall} ondergaat.
 
-\begin{itemize}
-    \item \textbf{Front-end stall door I-cache miss:}
-\begin{Verbatim}[fontsize=\footnotesize, commandchars=\\\{\}]
-    ** ROB state @ 238898  size(0) total(7)
-   \colorbox{orange}{Front-end stalled until 239090}, in \colorbox{purple}{I-cache miss}
-   RS entries: 0
-   Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720:
-   [  1]  PREROB                          2  EXEC ( 1) 401726:
-   [  2]  PREROB                          3  EXEC ( 1) 40172c:
-   [  3]  PREROB                          4  EXEC ( 1) 401739:
-   [  4]  PREROB                          5  EXEC ( 1) 40173f:
-   [  5]  PREROB                          6  EXEC ( 1) 401746:
-   [  6]  PREROB                          7  EXEC ( 1) 401748:
-Adding fe_stall to PICS @ Dispatch: 1
-Adding drained to PICS @ Commit: 1
-Adding fe_stall to PICS @ Dispatch: 191
-Adding drained to PICS @ Commit: 191
-\end{Verbatim}
+Dit illustreert het belang van het gecombineerd bekijken van \textit{PICS} bij \textit{dispatch} en bij \textit{commit}, aangezien beide een complementair beeld geven en elk andere bottlenecks aan het licht brengen.
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{PSum.png}}
+\caption{PICS van de PSum benchmark}
+\label{fig:PSum}
+\end{figure}
+Merk op dat de \textit{Sniper simulator} soms afwijkende namen gebruikt ten opzichte van de \textit{assembler output}, zoals \textbf{je} en \textbf{jz}, die echter dezelfde instructie voorstellen.
+\newpage
+Als optimalisatie wordt de branch geëlimineerd door de berekening van \texttt{index} en de accumulatie van \texttt{t} te scheiden in twee afzonderlijke lussen:
+\begin{lstlisting}[language=C]
+    ...
+    for(i = 0; i < ITER + zero; ++i)
+    {
+        indices[a] = (i * STRIDE) % ARRAY_SIZE;
+        a += randArr[i];
+    }
+    for(i = 0; i < a + zero; ++i)
+    {
+        t += data[indices[i]];
+    }
+    ...
+\end{lstlisting}
+Door de lussen te splitsen verdwijnt de conditionele sprong volledig. Het gevolg is dat er een extra doorloop nodig is, maar doordat er geen \textit{mispredictions} meer optreden zal het blijken dat er toch een nettoverbetering is. Dit is duidelijk zichtbaar op figuur \ref{fig:OPSum}. De \textit{mispredictions} zijn volledig weggewerkt.
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{OPSum.png}}
+    \caption{PICS van OPSum benchmark}
+    \label{fig:OPSum}
+\end{figure}
+\todo[inline]{backend of back-end?}
 
-Allereerst markeert het \textcolor{orange}{latency attribuut} dat het volgende event zal plaatsvinden op cyclus 239090, zoals uitgelegd in \ref{subsec:latency}. Daarnaast wordt de oorzaak van deze vertraging gespecificeerd: dit is een \textcolor{purple}{\textit{cache miss}} en veroorzaakt bijgevolg een \textit{front-end stall}. Verder bevinden zich zeven \textit{µop's} in de PREROB. De aanwezigheid van een \textit{µop} in de PREROB duidt erop dat deze ofwel klaar is voor dispatch, ofwel hier nog niet voor in aanmerking komt. Dit laatste is een specifieke eigenschap van de \textit{Sniper-simulator} (zoals eerder vermeld in sectie ??). Een instructie kan bijvoorbeeld een \textit{instruction cache miss} veroorzaken. Omdat dit binnen de simulator niet op een traditionele manier verloopt, wordt er pas een penalty aan de latency toegevoegd op het moment dat deze instructie normaal gesproken gedispatched zou worden.
+\newpage
+\subsection{Commit}
+Nu wordt er gekeken naar volgende benchmark:
+\begin{lstlisting}[language=C]
+    ...
+    int i;
+    n=malloc(sizeof(struct ll));
+    cur=n;
+    for(i=0;i<LEN;++i) {
+        cur->val=i;
+        cur->_next=malloc(sizeof(struct ll));
+        malloc(3*64); // trash the memory
+        cur=cur->_next;
+    }
+    cur->val=100;
+    cur->_next=NULL;
+    ...
+    int t = 0,i,iter;
+    for(iter=0; iter < ITERS; ++iter) {
+        struct ll* cur =n;
+        while(cur!=NULL) {
+            t+=cur->val;
+            cur=cur->_next;
+        }
+    }
+    ...
+\end{lstlisting}
+In dit voorbeeld wordt een linked-list traversal uitgevoerd. De knopen bevinden zich redelijk ver van elkaar in het geheugen, waardoor de \textit{cache} snel vol raakt. Een \textit{load-instructie} op een bepaalde knoop is altijd afhankelijk van de \textit{load-instructie} van de vorige knoop. Op die manier zal elke \textit{load} afhankelijk zijn van de \textit{load} die op dat moment wordt uitgevoerd. Dit betekent ook dat het \textit{ROB} zeer snel vol raakt en er een \textit{backend stall} zal optreden. Om de exacte instructie die de \textit{stall} veroorzaakt te vinden, wordt er opnieuw gekeken naar de gegenereerde assembly-code.
+\todo[inline]{ROB of rs? to late to think about this}
+\begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jne,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx,rsi,test,nopl,rax}]
+    ...
+  401780:       add    (%rdx),%eax
+  401782:       mov    0x8(%rdx),%rdx
+  401786:       test   %rdx,%rdx
+  401789:       jne    401780 <loop+0x10>
+  40178b:       nopl   0x0(%rax,%rax,1)
+  401790:       add    (%rsi),%eax
+  401792:       mov    0x8(%rsi),%rsi
+  401796:       test   %rsi,%rsi
+  401799:       jne    401790 <loop+0x20>
+    ...
+\end{lstlisting}
+Er zijn twee opmerkelijke dingen: Ten eerste is er de \textbf{add \textbar 401780}, de eerste instructie die een \textit{load} uitvoert en overeenkomt met de accumulatie van \texttt{t}. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor de \textbf{add \textbar 401780} instructie de bottleneck vormt. Dit geldt voor beide blokken in de assembly-code, aangezien het tweede blok op adres \textbf{401790} identiek is aan het eerste.
 
-Hier is duidelijk te zien dat de attributie van cycli correct verloopt: de cycli die verloren gaan door de \textit{cache miss} zijn deze vanaf de huidige cyclus tot aan het volgende event. Dit zijn er \(239090 - 238898 = 192 \), wat overeen komt met het toevoegen van eerst één cyclus en daarna de volgende 191 cycli. Waarom dit in twee stappen gebeurt staat beter uitgelegd in de technische bespreking.
+Ten tweede is het opmerkelijk dat de compiler \textit{loop unrolling} heeft toegepast op de buitenste lus. De twee blokken in de assembly-code zijn namelijk twee onafhankelijke traversals van de lijst, respectievelijk met register \texttt{rdx} en \texttt{rsi}. Omdat deze twee traversals onafhankelijk zijn, kan de processor via \textit{out-of-order} uitvoering beide tegelijk uitvoeren. Terwijl de ene traversal wacht op een \textit{load} uit het geheugen, kan de processor al instructies van de andere traversal uitvoeren, wat de impact van de afhankelijke loads gedeeltelijk compenseert.
+\todo[inline]{cache sneller vol??}
 
-\item \textbf{Misprediction en Back-end stall:}
-\begin{Verbatim}[fontsize=\footnotesize, commandchars=\\\{\}]
-    ** ROB state @ 239090  size(0) total(8)
-   RS entries: 0
-   Outstanding loads: 0  stores: 0
-   [  0]  PREROB                          1  EXEC ( 1) 401720:
-   [  1]  PREROB                          2  EXEC ( 1) 401726:
-   [  2]  PREROB                          3  EXEC ( 1) 40172c:
-   [  3]  PREROB                          4  EXEC ( 1) 401739:
-   [  4]  PREROB                          5  EXEC ( 1) 40173f:
-   [  5]  PREROB                          6  EXEC ( 1) 401746:
-   [  6]  PREROB                          7  EXEC ( 1) 401748:
-   [  7]  PREROB                          8  EXEC ( 1) 40174b:
-Adding base to PICS @ Dispatch: 0.249998
-Adding base to PICS @ Dispatch: 0.249998
-\colorbox{purple}{Adding base to PICS @ Dispatch : 0.249998}
-\colorbox{orange}{Adding mispred to PICS @ Dispatch: 0.249998}
-\colorbox{blue}{Adding stalled to PICS @ Commit: 1}
-Adding mispred to PICS @ Dispatch: 0
-Adding stalled to PICS @ Commit: 0
-\end{Verbatim}
-In deze situatie ontbreekt het \textit{latency}-attribuut, wat erop wijst dat er geen vertraging optreedt en de volgende gebeurtenis in de direct daaropvolgende cyclus zal plaatsvinden. Ondanks het ontbreken van deze vertraging kunnen er tijdelijk slechts drie \textit{µop's} worden \textit{gedispatched}. De oorzaak hiervan ligt bij de derde \textit{µop}, die een \textit{misprediction} veroorzaakt. Deze specifieke instructie wordt nog wel \textcolor{purple}{\textit{gedispatched}}, maar aangezien de simulator op dit moment al detecteert dat de voorspelling foutief is, wordt het dispatchen van verdere \textit{µop's} onmiddellijk gestaakt. Er wordt op correcte wijze \textcolor{orange}{0.25 cycli} toegekend aan deze \textit{µop} omwille van de \textit{misprediction}. Alle overige verloren cycli ten gevolge van deze foute voorspelling moeten eveneens aan deze specifieke \textit{µop} worden toegewezen, totdat deze succesvol \textit{geissued} is en de buffers en queues volledig \textit{geflushed} zijn.
+Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de twee \textbf{add} instructies die hierboven vermeld werden de bottlenecks zijn. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \textbf{test} instructies aanduidt als bottleneck. Dit is te verwachten aangezien, door de constructie van de \textit{PICS} bij \textit{dispatch}, de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatched} wegens een \textit{backend stall}. Op het moment dat de \textbf{add} instructie wacht op een \textit{load}, staat de \textbf{test} instructie als volgende klaar om \textit{gedispatched} te worden en krijgt bijgevolg de cycli toegewezen, zoals besproken in \ref{subsection:PICS bij dispatch}. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA.png}}
+    \caption{PICS van AA benchmark}
+    \label{fig:AA}
+\end{figure}
 
-De \textit{PICS} geregistreerd bij \textit{commit} zullen in theorie correct zijn, maar schetsen een beduidend ander beeld. Aangezien er al twee eerdere \textit{µop's} de dispatch-fase doorliepen, maar deze blijkbaar niet direct verder verwerkt konden worden, krijgt de allereerste \textit{µop} logischerwijs \textcolor{blue}{cycli geattribueerd wegens een \textit{back-end stall}}. Dit fenomeen maskeert in feite de eigenlijke \textit{misprediction} door deze als een \textit{back-end stall} te camoufleren. Deze situatie illustreert helder het cruciale belang van profileren bij zowel de \textit{dispatch}- als de \textit{commit}-fase; deze gecombineerde aanpak levert namelijk een veel nauwkeuriger en completer beeld op van het daadwerkelijke applicatiegedrag en complexe prestatieproblemen.
-
-Als de volgende cycli worden geanalyseerd is het duidelijk dat er bij \textit{dispatch} heel de tijd wordt geatribueert voor \textit{misprediction}. Bij \textit{commit} worden er nog enkele cycli geattribueerd aan de \textit{back-end stall}. Tot dat de \textit{µop} die de \textit{misprediction} veroorzaak heeft vanvoor in de buffer komt, vanaf dan wordt er ook geattribueerd aan deze \textit{µop} voor de \textit{misprediction} tot de \textit{µop} is geissued (mocht dit nog niet gebeurt zijn) en de penalty die overeenkomt met het  \textit{flushen} gedaan is.
-\end{itemize}
-
-Hoewel deze analyse kan worden uitgebreid naar alle mogelijke scenario's, vormt de voorgaande bespreking reeds een sterke indicatie dat de toewijzing van cycli correct verloopt. Bovendien benadrukt het een duidelijk fundamenteel onderscheid tussen de profileringsinformatie op \textit{dispatch}- en \textit{commit}-niveau. In de hieropvolgende sectie zal de correctheid van de cyclusattributie verder worden onderbouwd en formeel bewezen worden aan de hand van enkele vastgestelde invarianten.
 \subsection{Invarianten}
 \todo{klopt ook voor commit?}
 \subsubsection{Totaal aantal cycli}
