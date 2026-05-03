@@ -338,13 +338,13 @@ Het doel van de implementatie is gelijkaardig aan het doel bij \ref{subsection:P
 en dat de toestanden waarin een \textit{commit-slot} zich kan bevinden (zie \ref{subsubsection:commit toestanden}) verschillend zijn van de toestanden bij dispatch.
 \newpage
 \section{Invarianten}
-In deze subsectie worden de invarianten van de verschillende componenten van de \textit{PICS} onderzocht. Dit laat toe te verifiëren of de implementatie overeenkomt met de verwachtingen en consistent is met de \textit{Sniper}-output.
+In deze subsectie worden de invarianten van de verschillende componenten van de \textit{PICS} onderzocht. Dit laat toe te verifiëren of de implementatie overeenkomt met de verwachtingen en consistent is met de \textit{Sniper}-output. Merk op dat dit enkel in detail besproken wordt voor de \textit{PICS} bij \textit{dispatch}, maar dat hetzelfde volledig analoog, met dezelfde invarianten, geldt voor de \textit{PICS} bij \textit{commit}.
 \todo[inline]{klopt ook voor commit?}
 \subsection{Totaal aantal cycli}
 Het is gemakkelijk in te zien dat het totaal aantal cycli tussen de start en het einde van de simulatie gelijk moet zijn aan de som van alle cycli die zijn toegewezen aan alle instructies. Dit is een fundamentele invariant, aangezien elke cyclus die wordt gespendeerd aan het uitvoeren van een programma moet worden toegeschreven aan een specifieke instructie. Er kunnen geen cycli verloren gaan of onterecht worden toegekend, omdat dit zou leiden tot een verschil tussen het totale aantal cycli en de som van de geattribueerde cycli.
 
 Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
-\subsubsection{Base en compute}
+\subsection{Base}
 Voor de uitvoering van het programma geldt de volgende invariant:
 \begin{equation}
 \sum_{i=0}^{N_s} \text{PICS}_{b,i} = N_d \cdot \frac{1}{\textit{dispatchwidth}}
@@ -352,10 +352,9 @@ Voor de uitvoering van het programma geldt de volgende invariant:
 \end{equation}
 $N_s$ stelt het aantal statische instructies in het programma voor, $N_d$ het totaal aantal dynamisch uitgevoerde \textit{µop's}, beide verkregen uit de \textit{Sniper}-output. $\text{PICS}_{b,i}$ stelt de basiscomponent van de $i$-de statische instructie voor zoals gedefinieerd in (\ref{eq:pics_base}).
 
-Dit is zo omdat elke \textit{µop} steeds gedispatcht en gecommit wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchwidth}\). Analoog kan voor de \textit{PICS} bij \textit{commit} geverifieerd worden of de \textit{compute}-component correct is.
-
-\subsubsection{Frontend stalls en drained}
-Het aantal cycli dat toegeschreven wordt aan de componenten \textit{frontend stall} en \textit{drained} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze componenten te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald. 
+Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchwidth}\).
+\subsection{Frontend stalls}
+Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald. 
 Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit. 
 Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} en \textit{drained} evenredig meeschaalt.
 
@@ -391,8 +390,8 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 \caption{MIP voor verschillend aantal iteraties}
 \label{fig:MIP}
 \end{figure}
-\subsubsection{Mispredictions en flushed}
-Het aantal cycli dat toegeschreven wordt aan de componenten \textit{misprediction} en \textit{flushed} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal vertakkingen wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
+\subsection{Mispredictions}
+Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal vertakkingen wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
 
 De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie. waardoor er dus veel foute voorspellingen zullen zijn.
 \begin{lstlisting}[language=C]
@@ -417,6 +416,8 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 \label{fig:CCh}
 \end{figure}
 
+\subsection{Backend stall}
+Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Er kan echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
 \newpage
 \section{Resultaten}
 Na het verifiëren van de \textit{PICS} kunnen enkele \textit{microbenchmarks} geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke \textit{benchmarks} besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
