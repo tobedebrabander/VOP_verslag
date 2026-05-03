@@ -66,8 +66,8 @@
 \\[0.5em]
 Begeleiders:
 \begin{tabular}[t]{l}
-    Ge Liu\\
-    Jaime Roelandts\\
+    Ir.\ Ge Liu\\
+    Dr.\ Ir.\ Jaime Roelandts\\
 \end{tabular}
 }
 
@@ -193,6 +193,7 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
 
 
 \section{Planning}
+De planning is weergegeven in Figuur~\ref{fig:planning}. Initieel was voor Fase 2 meer tijd voorzien, maar dankzij de kennis over de simulator en de aanpak om PICS te implementeren, opgedaan tijdens Fase 1, konden bij \textit{PICS @ Commit} alle componenten tegelijk aangepakt worden, al is de inhoudelijke aanpak niet dezelfde. Hierdoor kon er vroeger worden begonnen aan het verslag en aan optimalisaties op enkele benchmarks, waarover meer in de resultaten.
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}
@@ -216,14 +217,12 @@ Het doel van dit project is dan ook om PICS te implementeren op beide momenten b
             \ganttbar{Verificatie: Benchmarks}{9}{9} \\
             \ganttbar{Verificatie: Invarianten}{10}{10} \\
 
-            \ganttgroup{Fase 3: Verslag}{8}{12} \\
+            \ganttgroup{Fase 3: Verslag \& resultaten}{8}{12} \\
         \end{ganttchart}
     \end{tikzpicture}
     \caption{Projectplanning}
     \label{fig:planning}
 \end{figure}
-
-{\raggedleft\footnotesize\textit{Toelichting: Dankzij de kennis, over de simulator en over de aanpak om PICS te implementeren, uit de dispatch-implementatie, kon er bij PICS @ Commit onmiddellijk alle componenten tegelijk geïmplementeerd worden, al is de aanpak inhoudelijk niet hetzelfde.}\par}
 
 \section{Technische bespreking}
 Deze sectie zet de belangrijkste ideëen van de implementatie binnen de software uiteen. Er wordt een hoog niveau beeld gegeven van hoe de simulatie ten werk gaat en hoe de \textit{PICS} geïmplementeerd worden.
@@ -568,10 +567,11 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
     \caption{PICS van AAOpt benchmark}
     \label{fig:AA_opt}
 \end{figure}
-\section{Resultaten}
+
 \section{Reflectie}
+De samenwerking, organisatie en communicatie binnen de groep verliepen over het algemeen zeer vlot. Alle studenten waren gemotiveerd en betrokken, waardoor taken efficiënt verdeeld en opgevolgd konden worden. Ook de promotor en begeleiders waren nauw betrokken bij het project. Er was wekelijks overleg mogelijk, waarbij voortgang besproken werd en ruimte was voor inhoudelijke discussie. Deze open communicatie zorgde ervoor dat problemen snel gesignaleerd en aangepakt konden worden, wat sterk bijdroeg aan het uiteindelijke resultaat.
 \section{Openstaande problemen}
-\
+
 \section{Besluit}
 
 
@@ -608,24 +608,4 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 \appendix
 \section{Terminologie}
 
-\begin{itemize}
-    \item x86 architectuur: De breed gedragen instructieset-architectuur (ISA), oorspronkelijk geïntroduceerd door Intel en later uitgebreid naar 64-bit (x86-64) door AMD. Deze architectuur vormt de basis voor het merendeel van de hedendaagse pc's en servers. Het definieert de fundamentele instructies die een compatibele processor kan begrijpen en uitvoeren. \cite{x86-instructieset} \cite{AMD64}
-    \item Microarchitectuur: De specifieke hardwarematige implementatie van een instructieset-architectuur. Terwijl de ISA bepaalt wélke operaties een processor ondersteunt, specificeert de microarchitectuur hoe deze efficiënt worden gerealiseerd (bijv. de cache-grootte of het aantal functionele units).
-    \item Statische instructie: Een instructie zoals deze is opgeslagen in de gecompileerde binaire code van een programma. Het representeert de code op een vaste geheugenlocatie, onafhankelijk van het aantal keren dat deze instructie tijdens de uitvoering (dynamisch) wordt doorlopen. In dit verslag zal de term 'instructie' worden gebruikt om te verwijzen naar een statische instructie, tenzij anders vermeld.
-    \item Dynamische µop (micro-op): Een elementaire, laagniveau instructie. Complexe x86-instructies worden intern in de processor gedecodeerd in één of meerdere eenvoudigere µops, zodat deze uniform en met hoge efficiëntie door de executiepijplijn kunnen worden verwerkt. In dit verslag zal de term 'µop' worden gebruikt om te verwijzen naar een dynamische micro-op, tenzij anders vermeld.
-    \item Out-of-order execution: Een techniek waarbij een processor instructies uitvoert zodra hun operanden en de nodige hardware-resources beschikbaar zijn, onafhankelijk van de sequentiële programmavolgorde. Zo wordt de doorvoer aan instructies verhoogd door de tijd dat de kern inactief is te minimaliseren. Een simpel voorbeeld is het uitvoeren van aritmetische instructies terwijl een lange laadinstructie bezig is.
-    \item Re-order buffer (ROB): Een hardwarebuffer binnen de processor die instaat voor het registreren van de staat van lopende interne instructies. Het waarborgt dat de resultaten van out-of-order uitgevoerde operaties strikt volgens de oorspronkelijke programmavolgorde definitief in de architecturale staat (registers en geheugen) worden opgeslagen.
-    \item Dispatch: Het stadium in de processorpijplijn waarin gedecodeerde µops worden overgedragen aan de . De µop wacht hiermee op de daadwerkelijke beschikbaarheid van operanden en functionele units voor uitvoering.
-    \item Dispatch breedte: Het maximaal aantal gecombineerde µops dat de processor architecturaal binnen één enkele klokcyclus naar zijn uitvoereenheden kan dispatchen.
-    \item Superscalair: Een term die verwijst naar een processormodel dat is ontworpen om meerdere instructies of µops gelijktijdig te verwerken en dispatchen binnen dezelfde klokcyclus, wat impliciet een dispatch breedte vereist die groter is dan één.
-    \item Dispatch slot: Een beschikbaar logisch venster binnen een gegeven klokcyclus om één µop te dispatchen. Een onvolledige benutting van deze slots (bijvoorbeeld tijdens een cache miss) resulteert in onderbenutte rekencapaciteit.
-    \item Commit: De afsluitende fase van de instructieverwerking, waarbij de wijzigingen die door de voltooide instructie aan de architecturale staat zijn aangebracht, permanent en onomkeerbaar worden geregistreerd vanuit de ROB.
-    \item Miss event: Een formele verzamelnaam voor onverwachte processor-gebeurtenissen (zoals een cache miss of een foutieve sprongvoorspelling) die de continue stroom van instructies door de pijplijn onderbreken en resulteren in 'verloren' cycli aan wachttijd.
-    \item Cache miss: Een situatie waarbij de processor de benodigde data of instructie niet aantreft in de lokale en snellere cachehiërarchie. Als gevolg hiervan is een vertraagde toegang tot dieper gelegen geheugenniveaus vereist.
-    \item Foutieve sprongvoorspelling (misprediction): Het incident waarbij de branch predictor van de processor de stroom van een voorwaardelijke spronginstructie (branch) incorrect inschat. Dit vereist dat speculatief verwerkte instructies op het onjuiste pad worden geannuleerd.
-    \item Flushen: Het gecontroleerde proces waarbij de processorpijplijn, buffers en interne queues worden leeggemaakt ter verwijdering van speculatieve, foutief gegokte toestandswijzigingen na bijvoorbeeld een misprediction.
-    \item Interval simulatie: Een simulatietechniek die de stroom van instructies op een hoger abstractieniveau benadert door tussen miss events in te springen en de tussenliggende verwerking als een constante stroom te modelleren, om zo een optimaal evenwicht te bieden tussen simulatiesnelheid en nauwkeurigheid.
-    \item PICS (Per Instruction Cycle Stacks): Een profileringsmethode die gevisualiseerde inzichten levert door de cycli die een processorkern spendeert proportioneel en accuraat te attribueren aan de juiste onderliggende statische instructies binnen de programmacode.
-    \item Sniper-simulator: Een softwaregebaseerde interval-simulator ontwikkeld voor de x86-architectuur. Het stelt ontwikkelaars in staat om gedetailleerde prestatieprofielen te genereren voor zowel single- als multithreaded applicaties, met voldoende schaalbaarheid tot honderden parallelle threads.
-\end{itemize}
 \end{document}
