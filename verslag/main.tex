@@ -88,9 +88,9 @@ Begeleiders:
 \newpage
 
 \section{Inleiding}
-Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Als de adoptie en mogelijkheden van deze hardware groeit zal de impact van niet-versnelbare code op de totale performantie van een applicatie toenemen. Softwareontwikkelaars zullen in de toekomst dus steeds aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
+Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Met een toename in de adoptie en mogelijkheden van deze hardware zal de impact van niet-versnelbare code op de totale prestatie van een applicatie toenemen. Softwareontwikkelaars zullen in de toekomst dus steeds aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
 
-In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper simulator, wat softwareontwikkelaars in staat zou moeten stellen om de CPU-prestatie van hun code te visualizeren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Die de prestatie op twee plaatsen in de processor-pijplijn onderzocht, om een nog accurater beeld van de werkelijkheid te verkrijgen. Er wordt onderzocht hoe profileringsinformatie kan worden verzameld voor applicaties die draaien op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de prestatiekarakteristieken op applicatieniveau.
+Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van hun code te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie kan verzameld worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
 
 
 \newpage
@@ -353,8 +353,8 @@ $N_s$ stelt het aantal statische instructies in het programma voor, $N_d$ het to
 
 Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchwidth}\).
 \subsection{Frontend stalls}
-Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald. 
-Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit. 
+Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
+Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit.
 Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} en \textit{drained} evenredig meeschaalt.
 
 De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele \texttt{t}, waarbij dezelfde reeks meerdere keren na elkaar is uitgeschreven. Hierdoor wordt de lus in machinecode fysiek groot genoeg om \textit{I-cache misses} te veroorzaken.
@@ -429,7 +429,7 @@ Als eerste \textit{microbenchmark} wordt er gekeken naar één met de volgende s
         if (randArr[i]) {
             index = (i * STRIDE) % ARRAY_SIZE;
             t += data[index];
-        }   
+        }
     }
     ...
 \end{lstlisting}
