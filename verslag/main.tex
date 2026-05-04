@@ -105,9 +105,9 @@ Een \textit{superscalaire} microprocessorkern is een kern die meer dan één ins
 
 
 \subsubsection{Parallellisme op instructieniveau}
-Om meerdere instructies per cyclus uit te kunnen voeren, moet de kern al zeker meerdere instructies per cyclus uit het geheugen halen (\textit{fetchen}) en moet de hardware nodig om een instructie uit te voeren - zogenaamde \textit{execution units} - meerdere malen aanwezig zijn. Daarnaast moet er genoeg \textit{parallellisme} bestaan tussen de aanwezige instructies. Wanneer een instructie het resultaat nodig heeft van een eerdere instructie, moet hun uitvoering voldoende gescheiden zijn zodat het benodigde resultaat beschikbaar is op het moment dat de latere instructie uitgevoerd wordt. Indien er geen afhankelijkheden tussen instructies zijn, kan hun uitvoering overlappen en spreekt men van voldoende parallellisme.
+Om meerdere instructies per cyclus uit te kunnen voeren, moet de kern al zeker meerdere instructies per cyclus uit het geheugen halen (\textit{fetchen}) en moet de hardware nodig om een instructie uit te voeren - zogenaamde \textit{execution units} - meerdere malen aanwezig zijn. Daarnaast moet er genoeg \textit{parallellisme} bestaan tussen de aanwezige instructies. Om efficiënt gebruik te maken van cycli, moeten er steeds instructies aanwezig zijn in het \textit{OoO} venster die niet afhankelijk zijn van andere instructies. Een instructie die het resultaat nodig heeft van een eerdere instructie, moet wachten tot dat resultaat beschikbaar is, waardoor mogelijks een \textit{execution unit} cycli lang niets doet, wat een opportuniteitskost is.
 
-Het parallellisme tussen instructies binnen een basisblok - d.i. een serie instructies vanaf een target instructie (target van een spronginstructie) tot de bijhorende spronginstructie of de instructie net voor een volgende target instructie - is veelal beperkt \cite{h&p}. Het is dan ook deze beperking die \textit{OoO execution} probeert te omzeilen.
+Om elke cyclus instructies uit te voeren moeten er dus elke cyclus nuttige instructies zijn om uit te voeren, de afhankelijkheden tussen instructies beperken dit. Het is deze beperking die \textit{OoO} probeert te omzeilen. Door toe te laten dat instructies uitgevoerd worden in een andere volgorde dan de \textit{programmavolgorde}, en dus meer instructies te beschouwen voor uitvoering, wordt het waarschijnlijker dat er steeds een uitvoerbare instructie beschikbaar is.
 
 
 \subsubsection{De out-of-order pijplijn}
@@ -147,7 +147,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \begin{itemize}
     \item \textbf{Base}: Er treden geen problemen op, alle \textit{dispatchslots} worden ingenomen.
 
-    \item \textbf{Front end stall}: Niet alle \textit{dispatchslots} kunnen ingenomen worden doordat het afhalen van een instrucite langer duurt door bijvoorbeeld een instructie cache of TLB-miss.
+    \item \textbf{Front end stall}: Niet alle \textit{dispatchslots} kunnen ingenomen worden doordat het afhalen van een instructie langer duurt door bijvoorbeeld een instructie cache of TLB-miss.
 
     \item \textbf{Back end stall}: Niet het maximaal aantal \textit{µops} kunnen \textit{dispatchen} doordat er te veel \textit{µops} nog bezig zijn met uitvoeren, of wachten op afhankelijke instructies.
 
