@@ -252,7 +252,7 @@ O.b.v. die toestand wordt er bepaald wat er met de \textit{µop} en de dispatch-
 
 Deze 2 gevallen worden hieronder verder toegelicht.
 
-\paragraph{1.}
+\subsubsection{Base}
 
 
 Dit beschrijft de normale werking van de dispatch-fase. In dit geval ondervindt de \textit{µop} geen \textit{I-cache miss}, is er voldoende ruimte beschikbaar in de backend om nieuwe \textit{µop's} te ontvangen, en betreft het geen misspredicted branch instructie.
@@ -275,7 +275,7 @@ bestaat voor. $\text{PICS}_{\text{b}}$ staat voor de base component van de
 
 Na het dispatchen van de \textit{µop} en het toewijzen van de fractie van de dispatch cycle aan de base component, selecteert de dispatch-fase de volgende \textit{µop} en wordt het proces herhaald.
 
-\paragraph{2:}
+\subsubsection{Frontend stall, Backend stall en Misprediction}
 \label{paragraph:basismechanisme PICS}
 In dit geval ondervindt de \textit{µop} een van de drie mogelijke problemen die de dispatch fase zal onderbreken: een \textit{I-cache miss} (frontend stall), een resource conflict in de backend (backend stall), of een mispredicted branch instructie (misprediction).
 Voor elke oorzaak wordt hetzelfde basismechanisme gehanteerd. Wanneer een \textit{µop} een stall veroorzaakt, wordt deze samen met de stall oorzaak opgeslagen in een datastructuur. Vanaf dat moment wordt de dispatch fase volledig geblokkeerd en kunnen er geen nieuwe \textit{µop's} meer gedispatcht worden.
@@ -295,22 +295,15 @@ Samen met de reeds geattribueerde base component van het eerste dispatch slot wo
 Dit mechanisme garandeert dat elke cycle volledig geaccount wordt, wat later geverifieerd zal worden. De 3 oorzaken die een stall kan hebben verschillen voornamelijk in hoe en wanneer hun latency bepaald wordt.
 In wat volgt zullen de 3 gevallen verder genuanceerd worden.
 
-
-
-\subparagraph{Frontend stall:}
-
-Een frontend stall wordt veroorzaakt door een \textit{I-cache miss}. In een echte CPU zal een \textit{I-cache miss} in de fetchfase ervoor zorgen dat de toevoer van \textit{µop's} naar de dispatchfase tijdelijk onderbroken wordt. In \textit{Sniper} blijft deze toevoer echter constant.
+\begin{enumerate}
+    \item{\textbf{Frontend stall}} Een frontend stall wordt veroorzaakt door een \textit{I-cache miss}. In een echte CPU zal een \textit{I-cache miss} in de fetchfase ervoor zorgen dat de toevoer van \textit{µop's} naar de dispatchfase tijdelijk onderbroken wordt. In \textit{Sniper} blijft deze toevoer echter constant.
 Een \textit{I-cache miss} wordt daarom niet gemodelleerd door het ontbreken van \textit{µop's}, maar door het artificieel blokkeren van de dispatchfase. Hoewel er dus nog \textit{µop's} beschikbaar zijn, wordt dispatch expliciet onderbroken om de vertraging ten gevolge van de \textit{I-cache miss} te simuleren.
 Meer concreet wordt tijdens het dispatchen van elke \textit{µop} gecontroleerd of deze onderhevig was aan een \textit{I-cache miss}. Indien dit het geval is, wordt de dispatchfase onmiddellijk onderbroken, ongeacht het aantal resterende \textit{dispatch slots} in dezelfde cyclus.
 De oorzaak hiervan is dat de instructie waartoe de \textit{µop} behoort nog niet beschikbaar is vanuit het instructiegeheugen. In een echte CPU zou het overeenkomstige \textit{dispatch slot} dus leeg zijn, maar door de constante toevoer in \textit{Sniper} is de \textit{µop} reeds aanwezig. Hoewel de miss eerder in de pipeline (tijdens decode) werd gedetecteerd en de bijhorende latency daar werd bepaald, wordt deze pas zichtbaar in de dispatchfase.
 Vanaf het moment dat de stall optreedt, wordt het basismechanisme toegepast: de \textit{µop} en de stall-oorzaak worden in de datastructuur geplaatst, en de dispatchfase blijft geblokkeerd tot het tijdstip waarop de instructie zou terugkeren uit het instructiegeheugen. Dit tijdstip wordt als \textit{next event} teruggegeven aan de main loop.
 Alle cycli tijdens deze periode worden toegewezen aan de frontend component van de corresponderende \textit{statische instructie}. Dit omvat zowel volledige cycli zonder dispatch als het resterende deel van de cyclus waarin de stall initieel optrad.
 Op deze manier wordt de volledige miss latency correct en volledig geattribueerd.
-
-
-\subparagraph{Backend stall:}
-
-Een backend stall treedt op wanneer er onvoldoende resources beschikbaar zijn in de backend om een \textit{µop} te ontvangen. In \textit{Sniper} kan dit twee oorzaken hebben: de \textit{Reorder Buffer (ROB)} is vol, of de \textit{reservation stations} hebben geen vrije plaatsen meer.
+    \item{\textbf{Backend stall}} Een backend stall treedt op wanneer er onvoldoende resources beschikbaar zijn in de backend om een \textit{µop} te ontvangen. In \textit{Sniper} kan dit twee oorzaken hebben: de \textit{Reorder Buffer (ROB)} is vol, of de \textit{reservation stations} hebben geen vrije plaatsen meer.
 Tijdens de dispatchfase wordt voor elke \textit{µop} gecontroleerd of beide resources voldoende capaciteit hebben. Indien één van deze voorwaarden niet voldaan is, kan de \textit{µop} niet gedispatcht worden.
 De \textit{µop} die niet gedispatcht kan worden, wordt samen met de stall-oorzaak in de datastructuur geplaatst, waarna de dispatchfase wordt onderbroken.
 In tegenstelling tot een frontend stall is het eindtijdstip van de stall hier niet op voorhand gekend. Het vrijmaken van backend-resources hangt af van de voortgang in de issue- en commitfase, die entries uit de \textit{reservation stations} en de \textit{ROB} verwijderen. Daarom wordt als \textit{next event} een oneindig tijdstip teruggegeven.
@@ -318,12 +311,7 @@ De voortgang van de simulatie wordt hierdoor volledig bepaald door events in de 
 Zolang de backend-resources niet beschikbaar zijn, blijft de \textit{µop} in de datastructuur aanwezig en worden alle cycli toegewezen aan de backend component van de corresponderende \textit{statische instructie}, volgens het basismechanisme.
 Zodra een event in de backend voldoende resources vrijmaakt, kan de \textit{µop} alsnog gedispatcht worden. Op dat moment wordt deze uit de datastructuur verwijderd en wordt de dispatchfase hervat.
 Op deze manier wordt de volledige stall latency correct en volledig geattribueerd.
-
-
-\subparagraph{Misprediction:}
-\label{subparagraph: mispredicted}
-
-Een stall ten gevolge van een misprediction wordt veroorzaakt door een foutief voorspelde branch instructie. In een echte CPU wordt een branch \textit{µop} behandeld zoals een gewone \textit{µop}: deze wordt gedispatcht samen met \textit{µop's} op het voorspelde pad. Indien tijdens de execute fase blijkt dat de voorspelling fout was, worden alle jongere \textit{µop's} geflushed en wordt het fetchen hervat vanaf het correcte pad.
+    \item{\textbf{Misprediction}} \label{subparagraph: mispredicted} Een stall ten gevolge van een misprediction wordt veroorzaakt door een foutief voorspelde branch instructie. In een echte CPU wordt een branch \textit{µop} behandeld zoals een gewone \textit{µop}: deze wordt gedispatcht samen met \textit{µop's} op het voorspelde pad. Indien tijdens de execute fase blijkt dat de voorspelling fout was, worden alle jongere \textit{µop's} geflushed en wordt het fetchen hervat vanaf het correcte pad.
 In \textit{Sniper} wordt dit gedrag anders gemodelleerd. Aangezien de simulator kennis heeft van het correcte pad, worden foutief gespeculeerde \textit{µop's} niet gedispatcht. In plaats daarvan wordt de kost van een misprediction gesimuleerd door de dispatchfase tijdelijk te blokkeren.
 Tijdens dispatch wordt gecontroleerd of een \textit{µop} een foutief voorspelde branch is. Indien dit het geval is, wordt de \textit{µop} nog gedispatcht. Vervolgens wordt deze samen met de stall-oorzaak in de datastructuur geplaatst en wordt de dispatchfase geblokkeerd.
 De totale stall latency bestaat uit twee componenten. Enerzijds is er de \textit{resolution time}: de tijd tot de branch effectief uitgevoerd wordt in de issuefase. Tijdens deze periode is het eindtijdstip van de stall nog niet gekend.
@@ -331,67 +319,75 @@ Vanaf het moment dat de branch uitgevoerd wordt, wordt het eindtijdstip wel bepa
 Gedurende de volledige stall-periode worden alle cycli toegewezen aan de misprediction component van de corresponderende \textit{statische instructie}. Dit omvat ook de resterende \textit{dispatch slots} in de cyclus waarin de stall initieel optrad.
 Zodra de flush penalty verstreken is, wordt de \textit{µop} uit de datastructuur verwijderd en wordt de dispatchfase hervat.
 Op deze manier wordt de volledige kost van een misprediction correct en volledig geattribueerd.
-
-
+\end{enumerate}
 
 \subsection{Implementatie van PICS bij commit}
 
-Het doel van de implementatie bij commit is gelijkaardig aan het doel bij dispatch (\ref{subsection:PICS bij dispatch}): de latentie van elk \textit{commit-slot} wordt toegewezen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:commit toestanden}). Op deze manier wordt elke commit-cycle volledig gealloceerd:
-ofwel integraal aan één \textit{instructie}, ofwel opgesplits over meerdere \textit{instructies}. Het verschil tussen dispatch en commit is dat bij dispatch elk \textit{dispatch-slot} een \textit{µop} bevat, terwijl bij commit elk \textit{commit-slot} een \textit{ROB-entry} of kort \textit{entry} bevat. Een entry kan een \textit{µop} bevatten, maar kan ook leeg zijn.
-Opdat een entry vooraan\footnote{Dit is de plaats die de oudste \textit{µop} inneemt} in de \textit{ROB} verwijderd kan worden (committen van de \textit{µop} die in de entry aanwezig is) wordt er gecontroleerd in welke van de 4 toestanden zijn toegewezen \textit{commit-slot} zich bevindt  (zie \ref{subsubsection:commit toestanden}).
-O.b.v. die toestand wordt er bepaald wat er met de entry en de commit-flow gebeurt. Er zijn drie mogelijkheden:
+Het doel van de implementatie bij commit is analoog aan dat bij dispatch (\ref{subsection:PICS bij dispatch}): de latentie van elk \textit{commit-slot} (\(1 / \textit{commitbreedte}\)) wordt toegewezen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:commit toestanden}).
+Op deze manier wordt elke commit-cycle volledig gealloceerd: ofwel integraal aan één \textit{instructie}, ofwel opgesplitst over meerdere \textit{instructies}.
+
+In tegenstelling tot dispatch bevat elk \textit{commit-slot} geen \textit{µop}, maar een entry in de \textit{Reorder Buffer (ROB)}. Een dergelijke entry kan een \textit{µop} bevatten, maar kan ook leeg zijn.
+Om te bepalen of een entry vooraan\footnote{Dit is de positie van de oudste \textit{µop} in de ROB} in de ROB kan worden verwijderd (i.e. de \textit{µop} kan committen), wordt nagegaan in welke van de vier toestanden het bijhorende \textit{commit-slot} zich bevindt.
+
+Afhankelijk van deze toestand wordt bepaald wat er met de entry en de commit-flow gebeurt. Er zijn drie mogelijke gevallen:
 \begin{enumerate}
-    \item De entry bevat een \textit{µop} en deze wordt gecommit. Het \textit{commit-slot} bevindt zich in de \textit{compute} toestand en committen blijft doorgaan.
-    \item De entry bevat een \textit{µop} maar deze kan niet worden gecommit. het \textit{commit-slot} bevindt zich in de \textit{stalled} toestand en committen wordt onderbroken.
-    \item De entry bevat geen \textit{µop} en kan dus bijgevolg niet gecommit worden. Het \textit{commit-slot} bevindt zich of in de \textit{drained} toestand of in de \textit{flushed} toestand.Ook hier wordt committen onderbroken.
+    \item De entry bevat een \textit{µop} die kan committen. Het slot bevindt zich in de \textit{compute} toestand en committen gaat verder.
+    \item De entry bevat een \textit{µop}, maar deze kan niet committen. Het slot bevindt zich in de \textit{stalled} toestand en committen wordt onderbroken.
+    \item De entry bevat geen \textit{µop}. Het slot bevindt zich in de \textit{drained} of \textit{flushed} toestand en committen wordt onderbroken.
 \end{enumerate}
 
 Deze drie gevallen worden hieronder verder toegelicht.
 
-\paragraph{1. Compute}
-Dit is de normale werking van de commit-fase. De entry bevat een \textit{µop} die geen problemen ondervindt en dus kan gecommit worden.
-Bijgevolg moet de latentie van het \textit{commit-slot} (1/\textit{commitbreedte}) toegewezen worden aan de \textit{compute component} van de \textit{instructie} waarvan de \textit{µop} afkomstig is.
-Een redenering analoog aan \ref{eq:pics_base} kan gemaakt worden, er geldt:
+\subsubsection{Compute}
+
+Dit beschrijft de normale werking van de commit-fase. De entry bevat een \textit{µop} die succesvol kan committen.
+Bijgevolg wordt een fractie van de cycle, namelijk \(1 / \textit{commitbreedte}\), toegewezen aan de \textit{compute component} van de \textit{instructie} waartoe deze \textit{µop} behoort.
+
+Analoog aan \ref{eq:pics_base} geldt uiteindelijk:
 \begin{equation}
     \text{PICS}_{\text{c}} = (N_{\text{e}} \cdot N_{\mu}) \cdot \frac{1}{\textit{commitbreedte}}
     \label{eq:pics_compute}
 \end{equation}
 
-Hierbij stellen $N_{\text{e}}$ en $N_{\mu}$ respectievelijk het aantal uitvoeringen van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze \textit{instructie} bestaat voor.
-$\text{PICS}_{\text{c}}$ staat voor de compute component van de \textit{statische instructie}
+Hierbij stellen $N_{\text{e}}$ en $N_{\mu}$ respectievelijk het aantal uitvoeringen van de \textit{statische instructie} en het aantal \textit{µop's} waaruit deze instructie bestaat voor.
+$\text{PICS}_{\text{c}}$ stelt de compute component van de \textit{statische instructie} voor.
 
-Nadat de \textit{µop} gecommit is, en de latentie van het \textit{commit-slot} werd toegewezen, selecteert de commit-fase de volgende entry en wordt het proces herhaald.
+Na het committen van de \textit{µop} en het toewijzen van de fractie van de cycle, wordt de volgende entry geselecteerd en wordt het proces herhaald.
 
-\paragraph{2. Stalled}
-De \textit{µop} kan niet gecommit worden omdat hij nog bezig is met uitvoeren. Vanaf het moment dat dit gedetecteerd wordt, zal de commit-fase onderbroken worden en zullen er geen andere \textit{µop's} kunnen committen.
-Alle \textit{commit-slots} blijven gedurende deze periode ongebruikt en hun latentie moet bijgevolg geattribueerd worden. Om deze attributie te doen wordt gebruik gemaakt van hetzelfde basismechanisme als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
-De \textit{µop} wordt in een datastructuur geplaatst, samen met de oorzaak van de stall (in dit geval stalled). In de main loop wordt de latentie bij de corresponderende \textit{stalled} component van de \textit{instructie} afkomstig van de \textit{µop} bijgeteld.
-Op het moment dat de \textit{µop} gecommit kan worden, wordt hij verwijderd uit de datastructuur zodat enkel en alleen de stall latentie geaccount wordt. Wederom wordt er rekening gehouden met de latentie van \textit{commit-slots} die volgden op deze \textit{µop} in dezelfde cyclus. Dit gebeurt op dezelfde manier als bij dispatch.
-De commit-fase wordt hervat.
+\subsubsection{Stalled}
 
+In dit geval bevat de entry een \textit{µop} die nog niet kan committen omdat deze nog niet volledig uitgevoerd is.
+Vanaf het moment dat dit gedetecteerd wordt, wordt de commit-fase onderbroken en kunnen er geen verdere \textit{µop's} committen.
+Alle \textit{commit-slots} blijven gedurende deze periode ongebruikt en hun latentie moet bijgevolg geattribueerd worden.
+Hiervoor wordt hetzelfde basismechanisme gebruikt als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
+De \textit{µop} wordt samen met de stall-oorzaak (\textit{stalled}) opgeslagen in een datastructuur. Vanaf dat moment wordt de commit-fase volledig geblokkeerd.
+Tijdens elke iteratie van de main loop worden de overgeslagen cycli toegewezen aan de \textit{stalled} component van de corresponderende \textit{statische instructie}.
+Net zoals bij dispatch wordt ook rekening gehouden met het resterende deel van de cyclus waarin de stall initieel optreedt. De latentie van alle daaropvolgende \textit{commit-slots} in dezelfde cyclus wordt eveneens toegewezen aan de \textit{stalled} component.
+Zodra de \textit{µop} wel kan committen, wordt deze uit de datastructuur verwijderd zodat enkel de stall-latentie geaccount wordt, en wordt de commit-fase hervat.
 
-\paragraph{3. Drained en Flushed}
-De entry bevat geen \textit{µop} dus er kan niets gecommit worden. Meer bepaald betekent dit dat er geen \textit{µop's} in de \textit{ROB} aanwezig zijn en als gevolg wordt de commit-fase onderbroken tot het moment dat er opnieuw \textit{µop's} in de \textit{ROB} aanwezig zijn.
-Alle \textit{commit-slots} blijven in die periode ongebruikt en bijgevolg moet hun latentie geattribueerd worden. Opnieuw wordt er voor deze attributie gebruik gemaakt van hetzelfde basismechanisme als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
-De \textit{µop} verantwoordelijk voor het leeg zijn van de \textit{ROB} wordt geidentificeerd (zie verder) en wordt in de datastructuur geplaatst samen met de oorzaak van het leeg zijn van de \textit{ROB}. De main loop zal latentie attribueren aan de corresponderende component (\textit{drained} of \textit{flushed}) van
-de \textit{instructie} waarvan de \textit{µop} afkomstig is. Vanaf er terug \textit{µop's} in de \textit{ROB} aanwezig zijn wordt de \textit{µop} verwijderd uit de datastructuur zodat enkel en alleen de latentie van de lege \textit{commit-slots} worden geattribueerd.
+\subsubsection{Drained en Flushed}
 
-Het identificeren van de \textit{µop} verantwoordelijk voor het leeg zijn van de \textit{ROB} gebeurt als volgt:
+In dit geval bevat de entry geen \textit{µop}, wat betekent dat de ROB leeg is.
+Als gevolg hiervan wordt de commit-fase onderbroken totdat er opnieuw \textit{µop's} beschikbaar zijn in de ROB.
+Alle \textit{commit-slots} blijven gedurende deze periode ongebruikt en hun latentie moet geattribueerd worden.
+Opnieuw wordt hiervoor hetzelfde basismechanisme gebruikt als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
+Een \textit{µop} wordt geïdentificeerd als verantwoordelijk voor het leeg zijn van de ROB en wordt samen met de oorzaak (\textit{drained} of \textit{flushed}) in de datastructuur geplaatst.
+Alle cycli tijdens deze periode worden toegewezen aan de overeenkomstige component van de \textit{statische instructie} waartoe deze \textit{µop} behoort.
+Zodra er opnieuw \textit{µop's} in de ROB aanwezig zijn, wordt deze \textit{µop} uit de datastructuur verwijderd en wordt de commit-fase hervat.
+Net zoals bij de andere gevallen wordt ook hier rekening gehouden met de resterende \textit{commit-slots} in de cyclus waarin deze toestand optreedt.
 
-\subparagraph{Flushed}
-De \textit{µop} die als laatste werd gecommit betrok een mispredicted branch instructie. Zoals eerder werd uitgelegd (zie \ref{subparagraph: mispredicted}) heeft het dispatchen van een \textit{µop} die tot een mispredicted branch \textit{instructie} hoort het effect dat
-de dispatch-fase voor een periode onderbroken wordt. Dit wil zeggen dat er na die mispredicted \textit{µop}, voor een bepaalde periode geen \textit{µop's} meer gedispatched worden.
-Als op het moment dat de mispredicted \textit{µop} gecommit wordt de dispatch-fase nog niet terug hervat werd zal de \textit{ROB} leeg zijn ten gevolge van de misprediction.
-Bij een lege entry wordt als eerste gekeken naar de laatste \textit{µop} die gecommit werd. Als dit een \textit{µop} afkomstig van een mispredicted branch \textit{instructie} betreft,
-dan zal deze \textit{µop} verantwoordelijk zijn voor het leeg zijn van de \textit{ROB} en er wordt latentie toegevoegd aan de \textit{instructie} zijn \textit{flushed} component.
+Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 
-Mocht de laatst gecommitte \textit{µop} geen mispredicted branch \textit{instructie} betreffen dan treedt het volgende geval op:
-
-\subparagraph{Drained}
-In \textit{Sniper} is het mogelijk om na te gaan wat de volgende \textit{µop} is die zal gedispachted worden. Mocht deze \textit{µop} een \textit{I-cache miss} ondervinden dan zal de dispatch-fase tijdelijk onderbroken zijn. Als gevolg hiervan stopt de toevoer van \textit{µop's} in de \textit{ROB} tijdelijk, waardoor de \textit{ROB}
-uiteindelijk leeg is gelopen. Die \textit{µop} zal als verantwoordelijk worden aangezien en krijgt de latentie bij zijn \textit{drained} component.
-\subparagraph{Flushed}
-
+\begin{enumerate}
+    \item{\textbf{Flushed}} Indien de laatst gecommitte \textit{µop} afkomstig is van een mispredicted branch instructie, wordt deze beschouwd als verantwoordelijk voor het leeg zijn van de ROB.
+                            Zoals besproken in \ref{subparagraph: mispredicted}, leidt een misprediction ertoe dat de dispatch-fase tijdelijk onderbroken wordt.
+                            Indien op het moment dat deze \textit{µop} commit de dispatch-fase nog steeds geblokkeerd is, zijn er geen nieuwe \textit{µop's} aangevoerd en is de ROB leeg ten gevolge van deze misprediction.
+                            In dat geval wordt de latentie toegewezen aan de \textit{flushed} component van de corresponderende \textit{statische instructie}.
+    \item{\textbf{Drained}} Indien de laatst gecommitte \textit{µop} geen mispredicted branch betreft, wordt gekeken naar de volgende \textit{µop} die gedispatcht zal worden.
+                            Indien deze \textit{µop} een \textit{I-cache miss} ondervindt, wordt de dispatch-fase tijdelijk onderbroken, waardoor de toevoer van \textit{µop's} naar de ROB stilvalt.
+                            De ROB loopt hierdoor leeg, en deze \textit{µop} wordt beschouwd als verantwoordelijk voor deze toestand.
+                            De latentie wordt in dat geval toegewezen aan de \textit{drained} component van de corresponderende \textit{statische instructie}.
+\end{enumerate}
 
 \newpage
 \section{Invarianten}
