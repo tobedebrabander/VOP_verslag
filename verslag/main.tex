@@ -429,7 +429,7 @@ Voor de uitvoering van het programma geldt de volgende invariant:
 $N_s$ stelt het aantal statische instructies in het programma voor, $N_d$ het totaal aantal dynamisch uitgevoerde \textit{µop's}, beide verkregen uit de output van de \textit{Sniper simulator}. $\text{PICS}_{b,i}$ stelt de basiscomponent van de $i$-de statische instructie voor zoals gedefinieerd in (\ref{eq:pics_base}).
 
 Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchbreedte}\).
-\subsection{Frontend stalls}
+\subsection{Frontend stalls en Drained}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
 Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit.
 Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} evenredig meeschaalt.
@@ -459,17 +459,23 @@ De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele 
 \vspace{-1em}
 \noindent\small\textit{C-code van de MIP benchmark}
 
-Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag wordt bevestigd.
+Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag at dispatch wordt bevestigd.
 \begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{mip_iter_scaling.png}}
 \caption{MIP voor verschillend aantal iteraties}
 \label{fig:MIP}
 \end{figure}
+
+At commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die at dispatch zichtbaar en schalen met het aantal \textit{I-cache misses} worden gemaskeerd at commit.
+Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn.
+Het correct zijn van de 3 andere componenten wordt in wat volgt aangetoond.
+
+
 \subsection{Mispredictions}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
 
-De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie. waardoor er dus veel foute voorspellingen zullen zijn.
+De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie, waardoor er dus veel foute voorspellingen zullen zijn.
 \begin{lstlisting}[language=C]
     ...
     for(i=0; i < STEP + zero; i+=1) {
@@ -483,17 +489,33 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie.
 \end{lstlisting}
 \vspace{-1em}
 \noindent\small\textit{C-code van de CCh benchmark}
-\todo[inline]{Misschien beter om te doen met PSum aangezien die later ook wordt gebruikt, kan dan hier verwijzen naar deel later waar er dieper ingegaan wordt op de werking van de benchmark.}
-Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:CCh}. Het is duidelijk dat het verwachte gedrag wordt bevestigd.
+
 \begin{figure}[H]
-\centering
-\makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{cch_iter_scaling.png}}
-\caption{CCh voor verschillend aantal iteraties}
-\label{fig:CCh}
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{cch_iter_scaling_dispatch.png}
+        \caption{CCh dispatch voor verschillend aantal iteraties}
+        \label{fig:CCh_dispatch}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{cch_iter_scaling_commit.png}
+        \caption{CCh commit voor verschillend aantal iteraties}
+        \label{fig:CCh_commit}
+    \end{minipage}
 \end{figure}
 
+Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark at commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
+gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie \ref{dispatch}).
+In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
+Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
+
 \subsection{Backend stall}
-Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Er kan echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
+Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Wederom kan er echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
+
+
 \newpage
 \section{Resultaten}
 Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke fragmenten besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
