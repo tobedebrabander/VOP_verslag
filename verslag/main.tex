@@ -399,7 +399,7 @@ Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invari
 \todo[inline]{klopt ook voor commit?}
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld - er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
 Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \textit{ROB-cycli} bevat het totale aantal simulatiecycli zoals gerapporteerd door \textit{Sniper}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}; de bijhorende \(\Delta\)-kolommen geven het verschil met de referentie.
 
@@ -498,7 +498,7 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Er kan echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
 \newpage
 \section{Resultaten}
-Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke \textit{benchmarks} besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
+Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke fragmenten besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
 \subsection{Dispatch}
 \label{dispatch}
 Als eerste fragment wordt er gekeken naar één met de volgende structuur:
@@ -519,25 +519,27 @@ Als eerste fragment wordt er gekeken naar één met de volgende structuur:
 Bij de uitvoering van deze code wordt voornamelijk een prestatieverlies verwacht door \textit{foute sprongvoorspellingen}, aangezien de sprongconditie afhankelijk is van een willekeurige waarde. Om te bepalen welke instructie hier exact verantwoordelijk voor is, wordt de gegenereerde assembly-code geanalyseerd:
 \begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jnz,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx}]
     ...
-  401780:       cmpb   $0x0,(%rcx)
-  401783:       je     40179f <loop+0x5f>
-  401785:       mov    %eax,%edx
-  401787:       imul   %r9,%rdx
-  40178b:       shr    $0x22,%rdx
-  40178f:       lea    (%rdx,%rdx,4),%r8d
-  401793:       mov    %eax,%edx
-  401795:       sub    %r8d,%edx
-  401798:       movslq %edx,%rdx
-  40179b:       add    -0x28(%rsp,%rdx,4),%esi
+    401780:       cmpb   $0x0,(%rcx)
+    401783:       je     40179f <loop+0x5f>
+    401785:       mov    %eax,%edx
+    401787:       imul   %r9,%rdx
+    40178b:       shr    $0x22,%rdx
+    40178f:       lea    (%rdx,%rdx,4),%r8d
+    401793:       mov    %eax,%edx
+    401795:       sub    %r8d,%edx
+    401798:       movslq %edx,%rdx
+    40179b:       add    -0x28(%rsp,%rdx,4),%esi
+    40179f:       add    $0x2,%eax
+
     ...
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
 \noindent\small\textit{Assembly code van PSum}
 
-De interessante instructie is \verb|je 40179f| op adres \texttt{401783}, de branch-instructie waarvan de conditie afhangt van \texttt{randArr[i]}. Indien \texttt{randArr[i]} gelijk is aan nul wordt de sprong genomen en de berekening van \texttt{t} overgeslagen. In het andere geval worden de instructies van \textbf{401785} tot \textbf{40179b} uitgevoerd, waarbij \texttt{index} berekend wordt en \texttt{t} geaccumuleerd wordt. Beide paden komen samen op \textbf{40179f}, waarna de volgende iteratie begint.
+De interessante instructie is \verb|je| op adres \verb|401783| — de branch-instructie waarvan de conditie afhangt van \verb|randArr[i]|. Indien \verb|randArr[i]| gelijk is aan nul wordt de sprong genomen en de berekening van \verb|t| overgeslagen. In het andere geval worden de instructies van \verb|401785| tot \verb|40179b| uitgevoerd, waarbij \verb|index| berekend wordt en \verb|t| geaccumuleerd wordt. Beide paden komen samen op \verb|40179f|, waarna de volgende iteratie begint.
 
-Omdat \texttt{randArr} willekeurige waarden bevat, kan de \textit{branch predictor} geen patroon herkennen en zal er frequent een foute voorspelling gemaakt worden. Er wordt dan ook verwacht dat \textbf{je \textbar\ 401783} de instructie is met de meeste geattribueerde cycli, voornamelijk door \textit{mispredictions}. Figuur \ref{fig:PSum} toont de \textit{PICS} bij \textit{dispatch} en bij \textit{commit}. Bij \textit{dispatch} volgt de \textit{PICS} de verwachtingen en wordt \textbf{je \textbar\ 401783} correct aangeduid als bottleneck. Opmerkelijk is dat dit bij \textit{commit} niet het geval is: daar wordt de bottleneck gemaskeerd door \textbf{cmp \textbar\ 401780}, die als geheugentoegang een \textit{backend stall} ondergaat.
+Omdat \verb|randArr| willekeurige waarden bevat, kan de \textit{branch predictor} geen patroon herkennen en zal er frequent een foute voorspelling gemaakt worden. Er wordt dan ook verwacht dat \verb|je| de instructie is met de meeste geattribueerde cycli, voornamelijk door \textit{mispredictions}. Figuur \ref{fig:PSum} toont de \textit{PICS} bij \textit{dispatch} en bij \textit{commit}. Bij \textit{dispatch} volgt de \textit{PICS} de verwachtingen en wordt \verb|je| correct aangeduid als bottleneck. Opmerkelijk is dat dit bij \textit{commit} niet het geval is: daar wordt de bottleneck gemaskeerd door de \verb|cmp| instructie op adres \verb|401780|, die als geheugentoegang een \textit{backend stall} ondergaat.
 
 Dit illustreert het belang van het gecombineerd bekijken van \textit{PICS} bij \textit{dispatch} en bij \textit{commit}, aangezien beide een complementair beeld geven en elk andere bottlenecks aan het licht brengen.
 \begin{figure}[H]
@@ -546,9 +548,9 @@ Dit illustreert het belang van het gecombineerd bekijken van \textit{PICS} bij \
 \caption{PICS van de PSum benchmark}
 \label{fig:PSum}
 \end{figure}
-Merk op dat de \textit{Sniper simulator} soms afwijkende namen gebruikt ten opzichte van de \textit{assembler output}, zoals \textbf{je} en \textbf{jz}, die echter dezelfde instructie voorstellen.
+Merk op dat de \textit{Sniper simulator} soms afwijkende namen gebruikt ten opzichte van de \textit{assembler output} — e.g. \verb|je| en \verb|jz| — die echter dezelfde instructie voorstellen.
 
-Als optimalisatie wordt de branch geëlimineerd door de berekening van \texttt{index} en de accumulatie van \texttt{t} te scheiden in twee afzonderlijke lussen:
+Als optimalisatie wordt de branch geëlimineerd door de berekening van \verb|index| en de accumulatie van \verb|t| te scheiden in twee afzonderlijke lussen:
 \begin{lstlisting}[language=C]
     ...
     for(i = 0; i < ITER + zero; ++i)
@@ -592,14 +594,13 @@ Nu wordt er gekeken naar volgende code:
     cur->val=100;
     cur->_next=NULL;
     ...
-    int t = 0,i,iter;
-    for(iter=0; iter < ITERS; ++iter) {
-        struct ll* cur =n;
-        while(cur!=NULL) {
-            t+=cur->val;
-            cur=cur->_next;
-        }
+    int t = 0,i;
+    struct ll* cur =n;
+    while(cur!=NULL) {
+        t+=cur->val;
+        cur=cur->_next;
     }
+    return t;
     ...
 \end{lstlisting}
 \vspace{-1em}
@@ -608,17 +609,13 @@ Nu wordt er gekeken naar volgende code:
 
 In dit voorbeeld wordt een \textit{linked-list traversal} uitgevoerd. De knopen bevinden zich redelijk ver van elkaar in het geheugen, waardoor de \textit{cache} snel vol raakt. Een \textit{load-instructie} op een bepaalde knoop is altijd afhankelijk van de \textit{load-instructie} van de vorige knoop. Op die manier zal elke \textit{load} afhankelijk zijn van de \textit{load} die op dat moment wordt uitgevoerd. Dit betekent ook dat de \textit{ROB} zeer snel vol raakt en er een \textit{backend stall} zal optreden. Om de exacte instructie die de \textit{stall} veroorzaakt te vinden, wordt er opnieuw gekeken naar de gegenereerde assembly-code.
 \todo[inline]{ROB of rs? to late to think about this}
-\begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jne,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx,rsi,test,nopl,rax}]
+\begin{lstlisting}[morekeywords={cmpb,ret,je,mov,imul,shr,lea,sub,movslq,add,cmp,jne,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx,rsi,test,nopl,rax}]
     ...
-  401780:       add    (%rdx),%eax
-  401782:       mov    0x8(%rdx),%rdx
-  401786:       test   %rdx,%rdx
-  401789:       jne    401780 <loop+0x10>
-  40178b:       nopl   0x0(%rax,%rax,1)
-  401790:       add    (%rsi),%eax
-  401792:       mov    0x8(%rsi),%rsi
-  401796:       test   %rsi,%rsi
-  401799:       jne    401790 <loop+0x20>
+    401780:       add    (%rsi),%eax
+    401782:       mov    0x8(%rsi),%rsi
+    401786:       test   %rsi,%rsi
+    401789:       jne    401780 <loop+0x10>
+    40178b:       ret
     ...
 
 \end{lstlisting}
@@ -626,23 +623,20 @@ In dit voorbeeld wordt een \textit{linked-list traversal} uitgevoerd. De knopen 
 \hspace{5em}
 \noindent\small\textit{Assembly-code van AA}
 
-Er zijn twee opmerkelijke zaken: ten eerste is er de \textbf{add \textbar 401780}, de eerste instructie die een \textit{load} uitvoert en overeenkomt met de accumulatie van \texttt{t}. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor de \textbf{add \textbar 401780} instructie de bottleneck vormt. Dit geldt voor beide blokken in de assembly-code, aangezien het tweede blok op adres \textbf{401790} identiek is aan het eerste.
+De \verb|add| op adres \verb|401780| is de eerste instructie die een \textit{load} uitvoert en komt overeen met de accumulatie van \verb|t|. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor deze \verb|add| instructie de bottleneck vormt.
 
-Ten tweede is het opmerkelijk dat de compiler \textit{loop unrolling} heeft toegepast op de buitenste lus. De twee blokken in de assembly-code zijn namelijk twee onafhankelijke traversals van de lijst, respectievelijk met register \texttt{rdx} en \texttt{rsi}. Omdat deze twee traversals onafhankelijk zijn, kan de processor via \textit{OoO} uitvoering beide tegelijk uitvoeren. Terwijl de ene traversal wacht op een \textit{load} uit het geheugen, kan de processor al instructies van de andere traversal uitvoeren, wat de impact van de afhankelijke loads gedeeltelijk compenseert.
-\todo[inline]{cache sneller vol??}
-
-Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de twee \textbf{add} instructies die hierboven vermeld werden de bottlenecks zijn. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \textbf{test} instructies aanduidt als bottleneck. Dit is echter te verwachten aangezien, door de constructie van de \textit{PICS} bij \textit{dispatch}, de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatcht} wegens een \textit{backend stall}. Op het moment dat de \textbf{add} instructie wacht op een \textit{load}, staat de \textbf{test} instructie als volgende klaar om \textit{gedispatcht} te worden en krijgt bijgevolg de cycli toegewezen, zoals besproken in \ref{subsection:PICS bij dispatch}. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
+Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de \verb|add| instructie die hierboven vermeld is de bottleneck is. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \verb|test| instructie aanduidt als bottleneck. Dit is echter te verwachten aangezien — wegens constructie van de \textit{PICS} bij \textit{dispatch}, zie \ref{subsection:PICS bij dispatch} — de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatcht}. Op het moment dat de \verb|add| instructie wacht op een \textit{load}, staat de \verb|test| instructie als volgende klaar om \textit{gedispatcht} te worden en krijgt bijgevolg de cycli toegewezen. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_nl.png}}
     \caption{PICS van AA}
     \label{fig:AA}
 \end{figure}
 
-Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de gelinkte lijst. Er wordt gekozen om aan \textit{arena allocation} te doen. Dit wil zeggen dat wanneer de eerste knoop wordt gealloceerd, er onmiddellijk een groter blok wordt gealloceerd voor meerdere knopen. De volgende knopen worden dan gealloceerd door een pointer op te schuiven. Er moet echter een afweging gemaakt worden over hoeveel ruimte er wordt gealloceerd: een te groot blok reserveren verspilt mogelijks geheugen, terwijl een te klein blok weinig voordeel biedt. Als er wordt gewerkt met \textit{arena allocation} waarbij er onmiddellijk vijf knopen worden gealloceerd, zijn de bijhorende \textit{PICS} te zien in Figuur~\ref{fig:AA_opt}. Het is duidelijk dat het aantal cycli gespendeerd in een \textit{backend stall} daalt. Het initieel alloceren van meer knopen biedt echter een beperkt voordeel, aangezien de cachegrootte een natuurlijke grens oplegt.
+Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de gelinkte lijst. Er wordt gekozen om aan \textit{arena allocation} te doen. Dit wil zeggen dat wanneer de eerste knoop wordt gealloceerd, er onmiddellijk een groter blok wordt gealloceerd voor meerdere knopen. De volgende knopen worden dan gealloceerd door een pointer op te schuiven. Er moet echter een afweging gemaakt worden over hoeveel ruimte er wordt gealloceerd: een te groot blok reserveren verspilt mogelijks geheugen en maakt het moeilijker een vrije blok te vinden, terwijl een te klein blok weinig voordeel biedt. Als er wordt gewerkt met \textit{arena allocation} waarbij er onmiddellijk vijf knopen worden gealloceerd, zijn de bijhorende \textit{PICS} te zien in Figuur~\ref{fig:AA_opt}. Het is duidelijk dat het aantal cycli gespendeerd in een \textit{backend stall} daalt. Het initieel alloceren van meer knopen biedt echter een beperkt voordeel, aangezien de cachegrootte een natuurlijke grens oplegt.
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_opt.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AAOpt_nl.png}}
     \caption{PICS van AAOpt}
     \label{fig:AA_opt}
 \end{figure}
