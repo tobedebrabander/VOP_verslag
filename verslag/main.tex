@@ -393,15 +393,13 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 
 \newpage
 
-
 \section{Invarianten}
-Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds moeten gelden. Door te controleren of de implementatie hieraan voldoet, kan worden nagegaan of ze consistent is met de bestaande output van de \textit{Sniper} simulator. De bespreking focust op de \textit{PICS} bij \textit{dispatch}. Voor de \textit{PICS} bij \textit{commit} gelden dezelfde invarianten en een volledig analoge redenering (?). Deze invarianten zullen gecontroleerd worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit.
-\todo[inline]{klopt ook voor commit?}
+Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en controleren of alle gegenereerde data dus consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden.
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
-Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \textit{ROB-cycli} bevat het totale aantal simulatiecycli zoals gerapporteerd door \textit{Sniper}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}; de bijhorende \(\Delta\)-kolommen geven het verschil met de referentie.
+Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er moet echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
 
 \begin{table}[H]
     \centering
@@ -418,8 +416,8 @@ Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \tex
         CCl   &   5{,}874.99 &   5{,}874.74 & \(-0.25\) &   5{,}871.72 & \(-3.27\) \\
         \hline
     \end{tabular}
-    \caption{Selectie van benchmarks. Alle waarden zijn in cycli. (Met afrondingsfouten)}
-    \label{tab:invariant_cycli}
+    \caption{Selectie van benchmarks. Alle waarden zijn in cycli.}
+    \label{tab:invariant_totaal}
 \end{table}
 
 \subsection{Base}
@@ -644,6 +642,13 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 \section{Reflectie}
 De samenwerking, organisatie en communicatie binnen de groep verliepen over het algemeen zeer vlot. Alle studenten waren gemotiveerd en betrokken, waardoor taken efficiënt verdeeld en opgevolgd konden worden. Ook de promotor en begeleiders waren nauw betrokken bij het project. Er was wekelijks overleg mogelijk, waarbij voortgang besproken werd en ruimte was voor inhoudelijke discussie. Deze open communicatie zorgde ervoor dat problemen snel gesignaleerd en aangepakt konden worden, wat sterk bijdroeg aan het uiteindelijke resultaat.
 \section{Openstaande problemen}
+\label{subsection:open_prob}
+
+\subsection{Unknown instructions}
+
+\subsection{TLB misses}
+
+\subsection{Dvfs}
 
 \section{Besluit}
 
