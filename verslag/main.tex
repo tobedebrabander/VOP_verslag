@@ -30,7 +30,7 @@
     keywordstyle=\color{blue},
     stringstyle=\color{red},
     commentstyle=\color{green!70!black},
-    numbers=left,
+    numbers=none,
     numberstyle=\tiny\color{gray},
     stepnumber=1,
     numbersep=10pt,
@@ -392,13 +392,36 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 \end{enumerate}
 
 \newpage
-\section{Invarianten}
-In deze subsectie worden de invarianten van de verschillende componenten van de \textit{PICS} onderzocht. Dit laat toe te verifiëren of de implementatie overeenkomt met de verwachtingen en consistent is met de \textit{Sniper}-output. Merk op dat dit enkel in detail besproken wordt voor de \textit{PICS} bij \textit{dispatch}, maar dat hetzelfde volledig analoog, met dezelfde invarianten, geldt voor de \textit{PICS} bij \textit{commit}.
-\todo[inline]{klopt ook voor commit?}
-\subsection{Totaal aantal cycli}
-Het is gemakkelijk in te zien dat het totaal aantal cycli tussen de start en het einde van de simulatie gelijk moet zijn aan de som van alle cycli die zijn toegewezen aan alle instructies. Dit is een fundamentele invariant, aangezien elke cyclus die wordt gespendeerd aan het uitvoeren van een programma moet worden toegeschreven aan een specifieke instructie. Er kunnen geen cycli verloren gaan of onterecht worden toegekend, omdat dit zou leiden tot een verschil tussen het totale aantal cycli en de som van de geattribueerde cycli.
 
-Dit klopt dan ook voor zowel de \textit{dispatch}- als de \textit{commit}-profielen.
+
+\section{Invarianten}
+Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds moeten gelden. Door te controleren of de implementatie hieraan voldoet, kan worden nagegaan of ze consistent is met de bestaande output van de \textit{Sniper} simulator. De bespreking focust op de \textit{PICS} bij \textit{dispatch}. Voor de \textit{PICS} bij \textit{commit} gelden dezelfde invarianten en een volledig analoge redenering (?). Deze invarianten zullen gecontroleerd worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit.
+\todo[inline]{klopt ook voor commit?}
+
+\subsection{Totaal aantal cycli}
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld - er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+
+Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \textit{ROB-cycli} bevat het totale aantal simulatiecycli zoals gerapporteerd door \textit{Sniper}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}; de bijhorende \(\Delta\)-kolommen geven het verschil met de referentie.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lrrrrrr}
+        \hline
+        Benchmark & ROB-cycli & \(PICS_d\) & \(\Delta_d\) & \(PICS_c\) & \(\Delta_c\) \\
+        \hline
+        ED1   & 118{,}438.73 & 118{,}438.70 & \(-0.03\) & 118{,}435.71 & \(-3.03\) \\
+        STL2b & 295{,}280.33 & 295{,}280.26 & \(-0.07\) & 295{,}277.22 & \(-3.11\) \\
+        MCS   & 245{,}360.45 & 245{,}360.31 & \(-0.14\) & 245{,}357.44 & \(-3.00\) \\
+        MI    &  48{,}538.89 &  48{,}538.75 & \(-0.14\) &  48{,}535.50 & \(-3.39\) \\
+        DPcvt &  21{,}845.95 &  21{,}845.75 & \(-0.20\) &  21{,}842.72 & \(-3.23\) \\
+        EI    &   7{,}197.98 &   7{,}197.75 & \(-0.23\) &   7{,}194.70 & \(-3.28\) \\
+        CCl   &   5{,}874.99 &   5{,}874.74 & \(-0.25\) &   5{,}871.72 & \(-3.27\) \\
+        \hline
+    \end{tabular}
+    \caption{Selectie van benchmarks. Alle waarden zijn in cycli. (Met afrondingsfouten)}
+    \label{tab:invariant_cycli}
+\end{table}
+
 \subsection{Base}
 Voor de uitvoering van het programma geldt de volgende invariant:
 \begin{equation}
@@ -411,7 +434,7 @@ Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een 
 \subsection{Frontend stalls}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
 Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pipeline} uitbuit.
-Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} en \textit{drained} evenredig meeschaalt.
+Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} evenredig meeschaalt.
 
 De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele \texttt{t}, waarbij dezelfde reeks meerdere keren na elkaar is uitgeschreven. Hierdoor wordt de lus in machinecode fysiek groot genoeg om \textit{I-cache misses} te veroorzaken.
 \begin{lstlisting}[language=C]
@@ -446,7 +469,7 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 \label{fig:MIP}
 \end{figure}
 \subsection{Mispredictions}
-Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal vertakkingen wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
+Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
 
 De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie. waardoor er dus veel foute voorspellingen zullen zijn.
 \begin{lstlisting}[language=C]
@@ -475,10 +498,10 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Er kan echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
 \newpage
 \section{Resultaten}
-Na het verifiëren van de \textit{PICS} kunnen enkele \textit{microbenchmarks} geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke \textit{benchmarks} besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
+Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke \textit{benchmarks} besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
 \subsection{Dispatch}
 \label{dispatch}
-Als eerste \textit{microbenchmark} wordt er gekeken naar één met de volgende structuur:
+Als eerste fragment wordt er gekeken naar één met de volgende structuur:
 \begin{lstlisting}[language=C]
     ...
     for (i = 0; i < ITER + zero; ++i) {
@@ -491,7 +514,7 @@ Als eerste \textit{microbenchmark} wordt er gekeken naar één met de volgende s
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
-\noindent\small\textit{C-code van de PSum benchmark}
+\noindent\small\textit{C-code van PSum}
 
 Bij de uitvoering van deze code wordt voornamelijk een prestatieverlies verwacht door \textit{foute sprongvoorspellingen}, aangezien de sprongconditie afhankelijk is van een willekeurige waarde. Om te bepalen welke instructie hier exact verantwoordelijk voor is, wordt de gegenereerde assembly-code geanalyseerd:
 \begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jnz,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx}]
@@ -510,9 +533,9 @@ Bij de uitvoering van deze code wordt voornamelijk een prestatieverlies verwacht
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
-\noindent\small\textit{Assembly-code van de PSum benchmark}
+\noindent\small\textit{Assembly code van PSum}
 
-De interessante instructie is \textbf{je \textbar\ 401783}, de branch-instructie waarvan de conditie afhangt van \texttt{randArr[i]}. Indien \texttt{randArr[i]} gelijk is aan nul wordt de sprong genomen en de berekening van \texttt{t} overgeslagen. In het andere geval worden de instructies van \textbf{401785} tot \textbf{40179b} uitgevoerd, waarbij \texttt{index} berekend wordt en \texttt{t} geaccumuleerd wordt. Beide paden komen samen op \textbf{40179f}, waarna de volgende iteratie begint.
+De interessante instructie is \verb|je 40179f| op adres \texttt{401783}, de branch-instructie waarvan de conditie afhangt van \texttt{randArr[i]}. Indien \texttt{randArr[i]} gelijk is aan nul wordt de sprong genomen en de berekening van \texttt{t} overgeslagen. In het andere geval worden de instructies van \textbf{401785} tot \textbf{40179b} uitgevoerd, waarbij \texttt{index} berekend wordt en \texttt{t} geaccumuleerd wordt. Beide paden komen samen op \textbf{40179f}, waarna de volgende iteratie begint.
 
 Omdat \texttt{randArr} willekeurige waarden bevat, kan de \textit{branch predictor} geen patroon herkennen en zal er frequent een foute voorspelling gemaakt worden. Er wordt dan ook verwacht dat \textbf{je \textbar\ 401783} de instructie is met de meeste geattribueerde cycli, voornamelijk door \textit{mispredictions}. Figuur \ref{fig:PSum} toont de \textit{PICS} bij \textit{dispatch} en bij \textit{commit}. Bij \textit{dispatch} volgt de \textit{PICS} de verwachtingen en wordt \textbf{je \textbar\ 401783} correct aangeduid als bottleneck. Opmerkelijk is dat dit bij \textit{commit} niet het geval is: daar wordt de bottleneck gemaskeerd door \textbf{cmp \textbar\ 401780}, die als geheugentoegang een \textit{backend stall} ondergaat.
 
@@ -541,20 +564,20 @@ Als optimalisatie wordt de branch geëlimineerd door de berekening van \texttt{i
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
-\noindent\small\textit{C-code van de OPSum benchmark}
+\noindent\small\textit{C-code van OPSum}
 
 Door de lussen te splitsen verdwijnt de conditionele sprong volledig. Het gevolg is dat er een extra doorloop nodig is, maar doordat er geen \textit{mispredictions} meer optreden zal het blijken dat er toch een nettoverbetering is. Dit is duidelijk zichtbaar op figuur \ref{fig:OPSum}. De \textit{mispredictions} zijn volledig weggewerkt.
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{OPSum.png}}
-    \caption{PICS van OPSum benchmark}
+    \caption{PICS van OPSum}
     \label{fig:OPSum}
 \end{figure}
 \todo[inline]{backend of back-end?}
 
 \newpage
 \subsection{Commit}
-Nu wordt er gekeken naar volgende benchmark:
+Nu wordt er gekeken naar volgende code:
 \begin{lstlisting}[language=C]
     ...
     int i;
@@ -581,9 +604,9 @@ Nu wordt er gekeken naar volgende benchmark:
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
-\noindent\small\textit{C-code van de AA benchmark}
+\noindent\small\textit{C-code van AA}
 
-In dit voorbeeld wordt een linked-list traversal uitgevoerd. De knopen bevinden zich redelijk ver van elkaar in het geheugen, waardoor de \textit{cache} snel vol raakt. Een \textit{load-instructie} op een bepaalde knoop is altijd afhankelijk van de \textit{load-instructie} van de vorige knoop. Op die manier zal elke \textit{load} afhankelijk zijn van de \textit{load} die op dat moment wordt uitgevoerd. Dit betekent ook dat de \textit{ROB} zeer snel vol raakt en er een \textit{backend stall} zal optreden. Om de exacte instructie die de \textit{stall} veroorzaakt te vinden, wordt er opnieuw gekeken naar de gegenereerde assembly-code.
+In dit voorbeeld wordt een \textit{linked-list traversal} uitgevoerd. De knopen bevinden zich redelijk ver van elkaar in het geheugen, waardoor de \textit{cache} snel vol raakt. Een \textit{load-instructie} op een bepaalde knoop is altijd afhankelijk van de \textit{load-instructie} van de vorige knoop. Op die manier zal elke \textit{load} afhankelijk zijn van de \textit{load} die op dat moment wordt uitgevoerd. Dit betekent ook dat de \textit{ROB} zeer snel vol raakt en er een \textit{backend stall} zal optreden. Om de exacte instructie die de \textit{stall} veroorzaakt te vinden, wordt er opnieuw gekeken naar de gegenereerde assembly-code.
 \todo[inline]{ROB of rs? to late to think about this}
 \begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jne,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx,rsi,test,nopl,rax}]
     ...
@@ -601,9 +624,9 @@ In dit voorbeeld wordt een linked-list traversal uitgevoerd. De knopen bevinden 
 \end{lstlisting}
 \vspace{-1em}
 \hspace{5em}
-\noindent\small\textit{Assembly-code van de AA benchmark}
+\noindent\small\textit{Assembly-code van AA}
 
-Er zijn twee opmerkelijke dingen: Ten eerste is er de \textbf{add \textbar 401780}, de eerste instructie die een \textit{load} uitvoert en overeenkomt met de accumulatie van \texttt{t}. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor de \textbf{add \textbar 401780} instructie de bottleneck vormt. Dit geldt voor beide blokken in de assembly-code, aangezien het tweede blok op adres \textbf{401790} identiek is aan het eerste.
+Er zijn twee opmerkelijke zaken: ten eerste is er de \textbf{add \textbar 401780}, de eerste instructie die een \textit{load} uitvoert en overeenkomt met de accumulatie van \texttt{t}. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor de \textbf{add \textbar 401780} instructie de bottleneck vormt. Dit geldt voor beide blokken in de assembly-code, aangezien het tweede blok op adres \textbf{401790} identiek is aan het eerste.
 
 Ten tweede is het opmerkelijk dat de compiler \textit{loop unrolling} heeft toegepast op de buitenste lus. De twee blokken in de assembly-code zijn namelijk twee onafhankelijke traversals van de lijst, respectievelijk met register \texttt{rdx} en \texttt{rsi}. Omdat deze twee traversals onafhankelijk zijn, kan de processor via \textit{OoO} uitvoering beide tegelijk uitvoeren. Terwijl de ene traversal wacht op een \textit{load} uit het geheugen, kan de processor al instructies van de andere traversal uitvoeren, wat de impact van de afhankelijke loads gedeeltelijk compenseert.
 \todo[inline]{cache sneller vol??}
@@ -612,7 +635,7 @@ Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA.png}}
-    \caption{PICS van AA benchmark}
+    \caption{PICS van AA}
     \label{fig:AA}
 \end{figure}
 
@@ -620,7 +643,7 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_opt.png}}
-    \caption{PICS van AAOpt benchmark}
+    \caption{PICS van AAOpt}
     \label{fig:AA_opt}
 \end{figure}
 
