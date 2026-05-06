@@ -90,7 +90,7 @@ Begeleiders:
 \section{Inleiding}
 Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Met een toename in de adoptie en mogelijkheden van deze hardware zal de impact van niet-versnelbare code op de totale prestatie van een applicatie toenemen. Softwareontwikkelaars zullen in de toekomst dus steeds aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
 
-Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van hun code te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per Instruction Cycle Stacks (PICS)}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie kan verzameld worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
+Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. In dit project richten wij ons op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van hun code te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie kan verzameld worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores — variërend van één tot honderden — met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
 
 
 \newpage
@@ -130,14 +130,14 @@ Elke cyclus probeert de hardware de oudste instructies te \textit{committen}. Di
 
 
 \subsubsection{Reorder buffer}
-De \textit{ROB} is de essentiële structuur die \textit{OoO execution} mogelijk maakt waarbij de sequentiële semantiek wordt behouden. De \textit{ROB} is \textit{First-in, first out (FIFO)}. Bij \textit{dispatch} wordt een slot ingenomen. Dat slot houdt de status van alle andere instructies waarvan de instructie afhankelijk is bij. Als alle afhankelijkheden uitgevoerd zijn, is de instructie klaar voor uitvoering. Het resultaat wordt dan ook ingevoerd in het \textit{ROB}-slot. Wanneer de oudste instructie \textit{gecommit} is - d.i. de instructie die als eerste in de \textit{ROB} staat - impliceert dit dat het programma in zijn uitvoering aan die instructie zit. Het bijhorende \textit{ROB}-slot wordt hierbij vrijgegeven alsook alle hardware die de instructie gebruikte voor zijn uitvoering. Instructies die eerder dan nodig uitgevoerd worden om het processor-gebruik te maximalizeren, worden zo gebufferd.
+De \textit{ROB} is de essentiële structuur die \textit{OoO execution} mogelijk maakt waarbij de sequentiële semantiek wordt behouden. De \textit{ROB} is \textit{First-in, first out (FIFO)}. Bij \textit{dispatch} wordt een slot ingenomen. Dat slot houdt de status van alle andere instructies waarvan de instructie afhankelijk is bij. Als alle afhankelijkheden uitgevoerd zijn, is de instructie klaar voor uitvoering. Het resultaat wordt dan ook ingevoerd in het \textit{ROB}-slot. Wanneer de oudste instructie \textit{gecommit} is - d.i. de instructie die als eerste in de \textit{ROB} staat - impliceert dit dat het programma in zijn uitvoering aan die instructie zit. Het bijhorende \textit{ROB}-slot wordt hierbij vrijgegeven alsook alle hardware die de instructie gebruikte voor zijn uitvoering. Instructies die eerder dan nodig uitgevoerd worden om het processor-gebruik te maximaliseren, worden zo gebufferd.
 
 
 \subsubsection{Onderbrekingen van de ideale instructiestroom}
-In het ideale, hypothetische geval worden elke cyclus \(n\) instructies afgehaald uit het geheugen. Dan \textit{dispatchen} er ook \(n\) instructies. Men zegt dat de architectuur een \textit{dispatchbreedte} \(n\) heeft, of dat er \(n\) \textit{dispatchslots} zijn. Analoog \textit{committen} er in het ideale geval \(n\) instructies per cyclus, en spreekt men ook van de \textit{commitbreedte} en \textit{commitslots}. Dit ideale scenario gebruikt de onrealistische veronderstelling dat elke instructie na één cyclus beschikbaar is, dat elke instructie in één cyclus kan uitgevoerd worden en dat er geen afhankelijkheden tussen instructies zijn. Er zijn talloze redenen waarom de pijplijn kan \textit{stallen}, wat de stroom van instructies onderbreekt. De \textit{Per Instruction Cycle Stacks}, die hieronder worden toegelicht, zullen deze opdelen in vier componenten.
+In het ideale, hypothetische geval worden elke cyclus \(n\) instructies afgehaald uit het geheugen. Dan \textit{dispatchen} er ook \(n\) instructies. Men zegt dat de architectuur een \textit{dispatchbreedte} \(n\) heeft, of dat er \(n\) \textit{dispatchslots} zijn. Analoog \textit{committen} er in het ideale geval \(n\) instructies per cyclus, en spreekt men ook van de \textit{commitbreedte} en \textit{commitslots}. Dit ideale scenario gebruikt de onrealistische veronderstelling dat elke instructie na één cyclus beschikbaar is, dat elke instructie in één cyclus kan uitgevoerd worden en dat er geen afhankelijkheden tussen instructies zijn. Er zijn talloze redenen waarom de pijplijn kan \textit{stallen}, wat de stroom van instructies onderbreekt. De \textit{Per-Instruction Cycle Stacks}, die hieronder worden toegelicht, zullen deze opdelen in vier componenten.
 
-\subsection{Per Instruction Cycle Stacks}
-De recent gepubliceerde papers \textit{TEA: Time-Proportional Event Analysis} \cite{tea2023} en \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} introduceren de \textit{Per Instruction Cycle Stacks (PICS)}. \textit{PICS} proberen de uitvoering van computerprogramma's te vizualizeren om de heetste instructies te kunnen identificeren en waar die het meeste tijd aan spenderen. \textit{PICS} kunnen opgesteld worden zowel aan de dispatch- als aan de commit-fase. Echter zal blijken dat ze vaak een complementair beeld geven. Hierdoor is het belangrijk om beide te implementeren. Dit zal geïllustreerd worden aan de hand van een voorbeeld in \ref{handmatige verificatie}.
+\subsection{Per-Instruction Cycle Stacks}
+De recent gepubliceerde papers \textit{TEA: Time-Proportional Event Analysis} \cite{tea2023} en \textit{Chips Need DIP: Time-Proportional Per-Instruction Cycle Stacks at Dispatch} \cite{dip2026} introduceren de \textit{PICS}. \textit{PICS} proberen de uitvoering van computerprogramma's te vizualiseren, zodat kan worden geïdentificeerd welke instructies het meeste tijd kosten en waaraan die tijd precies wordt besteed. \textit{PICS} kunnen opgesteld worden zowel aan de dispatch- als aan de commit-fase. Echter zal blijken dat ze vaak een complementair beeld geven. Hierdoor is het belangrijk om beide te implementeren. Dit zal geïllustreerd worden aan de hand van een voorbeeld in sectie \ref{handmatige verificatie}.
 
 \subsubsection{Correcte assignatie}
 Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet alleen geattribueerd worden aan de \textit{statische instructie} uit de programmacode die op dat moment de kern bezet, maar ook aan de juiste component van de bijhorende \textit{PICS}. Dit legt de onderliggende oorzaken van prestatieproblemen bloot en stelt ontwikkelaars in staat gerichte optimalisatiemogelijkheden te identificeren. Figuur \ref{fig:example_pics} toont een voorbeeld van \textit{PICS} voor vier instructies, zowel bij \textit{dispatch} als bij \textit{commit}, waar twee componenten duidelijk domineren. Welke componenten er beschouwd worden, wordt nu toegelicht.
@@ -149,9 +149,9 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \begin{itemize}
     \item \textbf{Base}: Er treden geen problemen op, alle \textit{dispatchslots} worden ingenomen.
 
-    \item \textbf{Front end stall}: Niet alle \textit{dispatchslots} kunnen ingenomen worden doordat het afhalen van een instructie langer duurt door bijvoorbeeld een instructie cache of TLB-miss.
+    \item \textbf{Frontend stall}: Niet alle \textit{dispatchslots} kunnen ingenomen worden doordat het afhalen van een instructie langer duurt door bijvoorbeeld een instructie cache of TLB-miss.
 
-    \item \textbf{Back end stall}: Niet het maximaal aantal \textit{µops} kunnen \textit{dispatchen} doordat er te veel \textit{µops} nog bezig zijn met uitvoeren, of wachten op afhankelijke instructies.
+    \item \textbf{Backend stall}: Niet het maximaal aantal \textit{µops} kunnen \textit{dispatchen} doordat er te veel \textit{µops} nog bezig zijn met uitvoeren, of wachten op afhankelijke instructies.
 
     \item \textbf{Misprediction}: Er werd een sprong verkeerd voorspeld. Daardoor komen er verkeerde instructies in de pijplijn en gaat er tijd verloren.
 \end{itemize}
@@ -159,7 +159,7 @@ Elke cyclus die een kern spendeert aan het uitvoeren van een programma moet niet
 \subsubsection{Componenten bij commit}
 \label{subsubsection:commit toestanden}
 \begin{itemize}
-    \item \textbf{Compute}: De voorste \textit{µop} in de \textit{ROB} is klaar om te committen, en de commitfase kan zonder beperkingen doorgaan.
+    \item \textbf{Compute}: De voorste\footnote{d.i. de oudste \textit{µop}} \textit{µop} in de \textit{ROB} is klaar om te committen, en de commitfase kan zonder beperkingen doorgaan.
 
     \item \textbf{Drained}: De \textit{ROB} is leeg, dus er is geen voorste \textit{µop} om te \textit{committen}.
 
@@ -240,7 +240,7 @@ In wat volgt zal er verder worden ingegaan op de implementatie van \textit{PICS}
 \subsection{Implementatie van PICS bij \textit{dispatch}}
 \label{subsection:PICS bij dispatch}
 
-Het doel van de implementatie bij dispatch is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:dispatch toestanden}).
+Het doel van de implementatie bij dispatch is om de latency van elk \textit{dispatch-slot} (\(1 / \textit{dispatchwidth}\)) toe te wijzen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie sectie \ref{subsubsection:dispatch toestanden}).
 Op deze manier wordt elke dispatch-cycle volledig gealloceerd: ofwel integraal aan één \textit{instructie}, ofwel opgesplitst over meerdere \textit{instructies}.
 
 In \textit{Sniper} wordt het mechanisme van \textit{dispatch-slots} uitgebreid. Voor elke \textit{µop}, toegewezen aan een \textit{slot} wordt gecontroleerd of de backend voldoende resources vrij heeft om de \textit{µop} te ontvangen.
@@ -325,7 +325,7 @@ Op deze manier wordt de volledige kost van een misprediction correct en volledig
 
 \subsection{Implementatie van PICS bij commit}
 
-Het doel van de implementatie bij commit is analoog aan dat bij dispatch (\ref{subsection:PICS bij dispatch}): de latentie van elk \textit{commit-slot} (\(1 / \textit{commitbreedte}\)) wordt toegewezen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie \ref{subsubsection:commit toestanden}).
+Het doel van de implementatie bij commit is analoog aan dat bij dispatch (zie sectie \ref{subsection:PICS bij dispatch}): de latentie van elk \textit{commit-slot} (\(1 / \textit{commitbreedte}\)) wordt toegewezen aan de \textit{instructie} die overeenkomt met de \textit{µop} verantwoordelijk voor de toestand van dat slot (zie sectie \ref{subsubsection:commit toestanden}).
 Op deze manier wordt elke commit-cycle volledig gealloceerd: ofwel integraal aan één \textit{instructie}, ofwel opgesplitst over meerdere \textit{instructies}.
 
 In tegenstelling tot dispatch bevat elk \textit{commit-slot} geen \textit{µop}, maar een entry in de \textit{Reorder Buffer (ROB)}. Een dergelijke entry kan een \textit{µop} bevatten, maar kan ook leeg zijn.
@@ -361,7 +361,7 @@ Na het committen van de \textit{µop} en het toewijzen van de fractie van de cyc
 In dit geval bevat de entry een \textit{µop} die nog niet kan committen omdat deze nog niet volledig uitgevoerd is.
 Vanaf het moment dat dit gedetecteerd wordt, wordt de commit-fase onderbroken en kunnen er geen verdere \textit{µop's} committen.
 Alle \textit{commit-slots} blijven gedurende deze periode ongebruikt en hun latentie moet bijgevolg geattribueerd worden.
-Hiervoor wordt hetzelfde basismechanisme gebruikt als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
+Hiervoor wordt hetzelfde basismechanisme gebruikt als bij dispatch (zie sectie \ref{paragraph:basismechanisme PICS}).
 De \textit{µop} wordt samen met de stall-oorzaak (\textit{stalled}) opgeslagen in een datastructuur. Vanaf dat moment wordt de commit-fase volledig geblokkeerd.
 Tijdens elke iteratie van de main loop worden de overgeslagen cycli toegewezen aan de \textit{stalled} component van de corresponderende \textit{statische instructie}.
 Net zoals bij dispatch wordt ook rekening gehouden met het resterende deel van de cyclus waarin de stall initieel optreedt. De latentie van alle daaropvolgende \textit{commit-slots} in dezelfde cyclus wordt eveneens toegewezen aan de \textit{stalled} component.
@@ -372,7 +372,7 @@ Zodra de \textit{µop} wel kan committen, wordt deze uit de datastructuur verwij
 In dit geval bevat de entry geen \textit{µop}, wat betekent dat de ROB leeg is.
 Als gevolg hiervan wordt de commit-fase onderbroken totdat er opnieuw \textit{µop's} beschikbaar zijn in de ROB.
 Alle \textit{commit-slots} blijven gedurende deze periode ongebruikt en hun latentie moet geattribueerd worden.
-Opnieuw wordt hiervoor hetzelfde basismechanisme gebruikt als bij dispatch (zie \ref{paragraph:basismechanisme PICS}).
+Opnieuw wordt hiervoor hetzelfde basismechanisme gebruikt als bij dispatch (zie sectie \ref{paragraph:basismechanisme PICS}).
 Een \textit{µop} wordt geïdentificeerd als verantwoordelijk voor het leeg zijn van de ROB en wordt samen met de oorzaak (\textit{drained} of \textit{flushed}) in de datastructuur geplaatst.
 Alle cycli tijdens deze periode worden toegewezen aan de overeenkomstige component van de \textit{statische instructie} waartoe deze \textit{µop} behoort.
 Zodra er opnieuw \textit{µop's} in de ROB aanwezig zijn, wordt deze \textit{µop} uit de datastructuur verwijderd en wordt de commit-fase hervat.
@@ -382,7 +382,7 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 
 \begin{enumerate}
     \item{\textbf{Flushed}} Indien de laatst gecommitte \textit{µop} afkomstig is van een mispredicted branch instructie, wordt deze beschouwd als verantwoordelijk voor het leeg zijn van de ROB.
-                            Zoals besproken in \ref{subparagraph: mispredicted}, leidt een misprediction ertoe dat de dispatch-fase tijdelijk onderbroken wordt.
+                            Zoals besproken in sectie \ref{subparagraph: mispredicted}, leidt een misprediction ertoe dat de dispatch-fase tijdelijk onderbroken wordt.
                             Indien op het moment dat deze \textit{µop} commit de dispatch-fase nog steeds geblokkeerd is, zijn er geen nieuwe \textit{µop's} aangevoerd en is de ROB leeg ten gevolge van deze misprediction.
                             In dat geval wordt de latentie toegewezen aan de \textit{flushed} component van de corresponderende \textit{statische instructie}.
     \item{\textbf{Drained}} Indien de laatst gecommitte \textit{µop} geen mispredicted branch betreft, wordt gekeken naar de volgende \textit{µop} die gedispatcht zal worden.
@@ -399,7 +399,7 @@ Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invari
 \todo[inline]{klopt ook voor commit?}
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli, de som van alle componenten, van alle \textit{PICS} bij \textit{dispatch}, moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
 Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \textit{ROB-cycli} bevat het totale aantal simulatiecycli zoals gerapporteerd door \textit{Sniper}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}; de bijhorende \(\Delta\)-kolommen geven het verschil met de referentie.
 
@@ -510,7 +510,7 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie,
 \end{figure}
 
 Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark at commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
-gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie \ref{dispatch}).
+gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie sectie \ref{dispatch}).
 In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
 Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
 
@@ -590,7 +590,7 @@ Als optimalisatie wordt de branch geëlimineerd door de berekening van \verb|ind
 \hspace{5em}
 \noindent\small\textit{C-code van OPSum}
 
-Door de lussen te splitsen verdwijnt de conditionele sprong volledig. Het gevolg is dat er een extra doorloop nodig is, maar doordat er geen \textit{mispredictions} meer optreden zal het blijken dat er toch een nettoverbetering is. Dit is duidelijk zichtbaar op figuur \ref{fig:OPSum}. De \textit{mispredictions} zijn volledig weggewerkt.
+Door de lussen te splitsen verdwijnt de conditionele sprong volledig. Het gevolg is dat er een extra doorloop nodig is, maar doordat er geen \textit{mispredictions} meer optreden zal het blijken dat er toch een nettoverbetering is. Dit is duidelijk zichtbaar op Figuur \ref{fig:OPSum}. De \textit{mispredictions} zijn volledig weggewerkt.
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{OPSum.png}}
@@ -647,7 +647,7 @@ In dit voorbeeld wordt een \textit{linked-list traversal} uitgevoerd. De knopen 
 
 De \verb|add| op adres \verb|401780| is de eerste instructie die een \textit{load} uitvoert en komt overeen met de accumulatie van \verb|t|. Daarna wordt er nog een \textit{load} uitgevoerd om het adres van de volgende knoop te verkrijgen. Deze zal sneller verlopen, aangezien de benodigde data normaal al in de cache staat dankzij de eerste \textit{load}. Zoals eerder uitgelegd, kan de volgende knoop pas worden ingelezen wanneer de vorige \textit{load} voltooid is, waardoor deze \verb|add| instructie de bottleneck vormt.
 
-Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de \verb|add| instructie die hierboven vermeld is de bottleneck is. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \verb|test| instructie aanduidt als bottleneck. Dit is echter te verwachten aangezien — wegens constructie van de \textit{PICS} bij \textit{dispatch}, zie \ref{subsection:PICS bij dispatch} — de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatcht}. Op het moment dat de \verb|add| instructie wacht op een \textit{load}, staat de \verb|test| instructie als volgende klaar om \textit{gedispatcht} te worden en krijgt bijgevolg de cycli toegewezen. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
+Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de \verb|add| instructie die hierboven vermeld is de bottleneck is. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \verb|test| instructie aanduidt als bottleneck. Dit is echter te verwachten aangezien — wegens constructie van de \textit{PICS} bij \textit{dispatch}, zie sectie \ref{subsection:PICS bij dispatch} — de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatcht}. Op het moment dat de \verb|add| instructie wacht op een \textit{load}, staat de \verb|test| instructie als volgende klaar om \textit{gedispatcht} te worden en krijgt bijgevolg de cycli toegewezen. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_nl.png}}
@@ -666,6 +666,9 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 \section{Reflectie}
 De samenwerking, organisatie en communicatie binnen de groep verliepen over het algemeen zeer vlot. Alle studenten waren gemotiveerd en betrokken, waardoor taken efficiënt verdeeld en opgevolgd konden worden. Ook de promotor en begeleiders waren nauw betrokken bij het project. Er was wekelijks overleg mogelijk, waarbij voortgang besproken werd en ruimte was voor inhoudelijke discussie. Deze open communicatie zorgde ervoor dat problemen snel gesignaleerd en aangepakt konden worden, wat sterk bijdroeg aan het uiteindelijke resultaat.
 \section{Openstaande problemen}
+
+
+
 
 \section{Besluit}
 
