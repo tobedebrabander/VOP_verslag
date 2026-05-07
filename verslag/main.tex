@@ -55,6 +55,8 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.6em}
 
+\hyphenation{cor-rect-heid}
+
 \thetitle{\color{ugentblue}Profileren van meerdradige applicaties met PICS}
 
 \infoboxa{\bfseries\large Project in het kader van  het Vakoverschrijdend Project, Groep BC01}
@@ -394,12 +396,12 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 \newpage
 
 \section{Invarianten}
-Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en controleren of alle gegenereerde data dus consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden.
+Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en daarmee verzekeren dat alle gegenereerde data consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden. De invarianten vormen geen sluitend bewijs van correctheid, maar een schending ervan zou onmiskenbaar wijzen op een fout in de implementatie.
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
-Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er moet echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
+Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
 
 \begin{table}[H]
     \centering
@@ -492,9 +494,15 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 \label{fig:CCh}
 \end{figure}
 
-\subsection{Backend stall}
-Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Er kan echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
+\subsection{Backend stall en stalled}
+Analoog aan de \textit{drained} component van \textit{PICS} bij \textit{commit}, wordt het argument voor de verificatie van de \textit{backend stall} component van \textit{PICS} bij \textit{dispatch} afgeleid uit de andere onderbouwingen. Er is reeds een argument voor de \textit{base}, \textit{frontend stall} en \textit{misprediction} component van \textit{PICS} bij \textit{dispatch}, alsook de totale som. Logischerwijs zijn de cycli uit de som die niet voorkomen in één van de drie componenten, \textit{backend stall} cycli. Dit geeft dus enkel een argument voor het totaal aantal geattribueerde \textit{backend stall} cycli, maar zegt niets over of de cycli naar de juiste instructie gaan.
+
+Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt gebruik gemaakt van een analoge redenering als bij de \textit{frontend stall} component van bij \textit{dispatch}. De \textit{MM microbenchmark} intoduceert signficant veel \textit{D-cache misses}. De instructie die naar 
+
+
 \newpage
+
+
 \section{Resultaten}
 Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke fragmenten besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
 \subsection{Dispatch}
