@@ -105,7 +105,7 @@ In deze sectie wordt de breedere context waarin dit project kadert uiteengezet. 
 
 
 \subsection{Out-of-order execution}
-Een \textit{superscalaire} microprocessorkern is een kern die meer dan één instructie per klokcyclus kan uitvoeren. Om deze capaciteit in de praktijk te realiseren, wordt in de meeste moderne processorkernen gebruik gemaakt van \textit{OoO execution}. Instructies worden uitgevoerd los van hun volgorde in de programmacode - de \textit{programmavolgorde}. Daarentegen wordt de semantiek van de sequentiële uitvoering, zoals die in de programmacode staat, wel bewaard voor de bovenliggende software. Dit stelt programmeurs in staat uit te gaan van sequentiële instructies om makkelijker over programmacode te redeneren, terwijl de kern instructies kan uitvoeren in een volgorde die de doorvoer verhoogt. Instructies worden in  \textit{programmavolgorde} het \textit{out-of-order} venster (in deze tekst ook uitvoeringsvenster genoemd) binnengebracht, wat \textit{dispatch} heet. In het uitvoeringsvenster worden de instructies uitgevoerd in een volgorde die de processorpijplijn in staat stelt klokcycli maximaal te benutten. De boekhouding van alle instructies aanwezig in het \textit{OoO} venster wordt gedaan in een hardwarestructuur, de \textit{reorder buffer (ROB)}. Na uitvoering wordt het effect van de instructies terug in programmavolgorde zichtbaar gemaakt, wat \textit{commit} heet. Een kern die gebruik maakt van \textit{OoO execution} wordt een \textit{OoO} kern genoemd.
+Een \textit{superscalaire} microprocessorkern is een kern die meer dan één instructie per klokcyclus kan uitvoeren. Om deze capaciteit in de praktijk te realiseren, wordt in de meeste moderne processorkernen gebruik gemaakt van \textit{OoO execution}. Instructies worden uitgevoerd los van hun volgorde in de programmacode - de \textit{programmavolgorde}. Daarentegen wordt de semantiek van de sequentiële uitvoering, zoals die in de programmacode staat, wel bewaard voor de bovenliggende software. Dit stelt programmeurs in staat uit te gaan van sequentiële instructies om makkelijker over programmacode te redeneren, terwijl de kern instructies kan uitvoeren in een volgorde die de doorvoer verhoogt. Instructies krijgen in  \textit{programmavolgorde} een slot gealloceerd in de \textit{reorder buffer (ROB)}, dit heet \textit{dispatch}. De \textit{ROB} is een hardwarestructuur die de boekhouding van de aanwezige instructies doet in een \textit{First-in, first-out (FIFO)} wachtrij. Nadat een instructie \textit{dispatcht}, kan deze uitgevoerd worden in een volgorde die de processorpijplijn in staat stelt klokcycli maximaal te benutten. Na uitvoering wordt het effect van de instructies terug in \textit{programmavolgorde} zichtbaar gemaakt, wat \textit{commit} heet. Een kern die gebruik maakt van \textit{OoO execution} wordt een \textit{OoO} kern genoemd.
 
 
 \subsubsection{Parallellisme op instructieniveau}
@@ -115,7 +115,7 @@ Om elke cyclus instructies uit te voeren moeten er dus elke cyclus nuttige instr
 
 
 \subsubsection{De out-of-order pijplijn}
-In deze sectie wordt in meer detail besproken hoe een instructie, van \textit{fetch} tot aan \textit{commit}, verwerkt wordt. Figuur \ref{fig:ooo-pipeline} toont een geabstraheerde, schematische voorstelling van een moderne \textit{OoO} pijplijn. De stippellijnen duiden aan waar de uitvoering in-order gebeurt, en waar de uitvoering \textit{OoO} gebeurt. De \textit{dispatch} en de \textit{commit} van instructies gebeurt altijd in-order. Daartussen gebeurt de \textit{OoO} uitvoering.
+In deze sectie wordt in meer detail besproken hoe een instructie, van \textit{fetch} tot aan \textit{commit}, verwerkt wordt. Figuur \ref{fig:ooo-pipeline} toont een geabstraheerde, schematische voorstelling van een moderne \textit{OoO} pijplijn. De pijlen in stippellijn duiden op operaties die \textit{out-of-order} kunnen, zoals het naar de \textit{execution units} brengen - wat \textit{issue} genoemd wordt. De pijlen met een volle pijl zijn operaties die \texit{in-order} moeten gebeueren. De \textit{dispatch} en de \textit{commit} van instructies gebeurt dus altijd \textit{in-order}.
 
 \begin{figure}[H]
     \centering
@@ -124,17 +124,13 @@ In deze sectie wordt in meer detail besproken hoe een instructie, van \textit{fe
     \label{fig:ooo-pipeline}
 \end{figure}
 
-Instructies worden eerst uit het geheugen afgehaald, (\textit{fetch}) waarna ze gedecodeerd worden. Bij \textit{complex instruction set computing (CISC)} architecturen (zoals de \textit{x86}) doen instructies vaak meer dan één iets in de pijplijn. Een instructie kan bijvoorbeeld zowel een waarde uit het geheugen halen en ook met die waarde een berekening uitvoeren. Die twee handelingen worden als twee eenheden in het uitvoervenster gebracht, wat een \textit{micro-operatie (µop)} genoemd wordt. Eén van de karakteriserende eigenschappen van \textit{reduced instruction set computing (RISC)} architecturen (zoals ARM architecturen) is dat instructies slechts één iets in de pijplijn doen. Bijvoorbeeld enkel load-operaties gaan naar het geheugen, terwijl bij \textit{CISC} ook een ADD naar het geheugen kan gaan.
+Instructies worden eerst uit het geheugen afgehaald, (\textit{fetch}) waarna ze gedecodeerd worden. Bij \textit{complex instruction set computing (CISC)} architecturen (zoals \textit{x86}) doen instructies vaak meer dan één iets in de pijplijn. Een instructie kan bijvoorbeeld zowel een waarde uit het geheugen halen en ook met die waarde een berekening uitvoeren. Na het \textit{decoderen} van de instructie onstaan twee \textit{micro-operaties (µops)}. Eén om naar het geheugen te gaan, en één om de berekening uit te voeren. Deze twee \textit{µops} worden afzonderlijk in de \textit{ROB} gebracht.  Een karakteriserende eigenschap van \textit{reduced instruction set computing (RISC)} architecturen (zoals ARM architecturen) is dat instructies slechts één iets in de pijplijn doen. Bijvoorbeeld enkel \textit{load}-operaties gaan naar het geheugen, terwijl bij \textit{CISC} ook een ADD naar het geheugen kan gaan.
 
-Dit gebeurt in \textit{programmavolgorde}. Op de figuur staan vier pijlen afgebeeld, wat zou impliceren dat er elke klokcyclus vier instructies uit het geheugen gehaald worden, het maximaal aantal instructies dat uit het geheugen kan gehaald worden verschilt echter per \textit{microarchitectuur}.
+Het afhalen van instructies gebeurt dus in \textit{programmavolgorde}. Op de figuur staan vier pijlen afgebeeld, wat zou impliceren dat er elke klokcyclus vier instructies uit het geheugen gehaald worden, het maximaal aantal instructies dat uit het geheugen kan gehaald worden verschilt echter per \textit{microarchitectuur}.
 
-\textit{Dispatch} is de fase waar de instructie het \textit{OoO} venster binnenkomt. Vanaf hier wordt geen rekening meer gehouden met de \textit{programmavolgorde}. Er wordt een slot in de \textit{ROB} gealloceerd voor de instructie en de instructie zal uitgevoerd worden vanaf alle afhankelijke instructies klaar zijn en de hardware beschikbaar is. Net als bij het \textit{fetchen} kunnen er elke cyclus meerdere instructies dispatchen. Hoeveel dat er maximaal zijn hangt opnieuw af van welke \textit{microarchitectuur} gebruikt wordt. Bemerk dat de slots in de \textit{ROB} in de \textit{programmavolgorde} van de corresponderende instructies staan.
+Na \textit{dispatch} staan de slots in de \textit{ROB} corresponderend met de \textit{gedispatchte} \textit{µops} in \textit{programmavolgorde}. De \textit{µop} zal uitgevoerd worden - \textit{issue} - vanaf alle afhankelijke \textit{µops} klaar zijn en er hardware beschikbaar is. Net als dat er bij \textit{fetch} elke cyclus meerdere instructies afgehaald kunnen worden, kunner er ook meerdere \textit{µops} elke cyclus \textit{dispatchen}. Hoeveel dat er maximaal zijn hangt opnieuw af van welke \textit{microarchitectuur} gebruikt wordt, en is niet noodzakelijk gelijk aan het aantal instructies dat \textit{gefetched} worden.
 
-Elke cyclus probeert de hardware de oudste instructies te \textit{committen}. Dit wil zeggen dat het effect van de instructie zichtbaar wordt in de \textit{architecturale staat}. Het resultaat kan bijvoorbeeld beschikbaar zijn in een register, of in het geheugen, en is zichtbaar voor de software. Alles wat voor commit gebeurt is puur speculatief. Het bijhorende slot in de \textit{ROB} wordt vrijgegeven. Bemerk dat \textit{commit} terug in \textit{programmavolgorde} gebeurt.
-
-
-\subsubsection{Reorder buffer}
-De \textit{ROB} is de essentiële structuur die \textit{OoO execution} mogelijk maakt waarbij de sequentiële semantiek wordt behouden. De \textit{ROB} is \textit{First-in, first out (FIFO)}. Bij \textit{dispatch} wordt een slot ingenomen. Dat slot houdt de status van alle andere instructies waarvan de instructie afhankelijk is bij. Als alle afhankelijkheden uitgevoerd zijn, is de instructie klaar voor uitvoering. Het resultaat wordt dan ook ingevoerd in het \textit{ROB}-slot. Wanneer de oudste instructie \textit{gecommit} is - d.i. de instructie die als eerste in de \textit{ROB} staat - impliceert dit dat het programma die instructie uitvoert. Het bijhorende \textit{ROB}-slot wordt hierbij vrijgegeven alsook alle hardware die de instructie gebruikte voor de uitvoering. Instructies die eerder dan nodig uitgevoerd worden om het processor-gebruik te maximaliseren, worden zo gebufferd.
+Elke cyclus probeert de hardware de oudste \textit{µop} te \textit{committen}. Deze staan in \textit{programmavolgorde} in de \textit{ROB} en \textit{committen} bijgevolg dus ook in \textit{programmavolgorde}. \textit{Commit} wil zeggen dat het effect van de instructie zichtbaar wordt in de \textit{architecturale staat}. Dit wil zeggen dat het resultaat bijvoorbeeld zichtbaar is in een register, of in het geheugen. Alles wat voor \textit{commit} gebeurt is speculatief, wat wil zeggen dat bij een foutieve \textit{sprongvoorspelling} er mogelijks \textit{µops} uitgevoerd worden waarvan het resultaat later wordt tenietgedaan. Wanneer een \textit{µop} commit komt het bijhorende slot in de \textit{ROB} vrij.
 
 
 \subsubsection{Onderbrekingen van de ideale instructiestroom}
@@ -396,9 +392,9 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en daarmee verzekeren dat alle gegenereerde data consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden. De invarianten vormen geen sluitend bewijs van correctheid, maar een schending ervan zou onmiskenbaar wijzen op een fout in de implementatie.
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
-Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
+Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in sectie \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
 
 \begin{table}[H]
     \centering
@@ -458,7 +454,7 @@ De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele 
 \vspace{-1em}
 \noindent\small\textit{C-code van de MIP benchmark}
 
-Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag at dispatch wordt bevestigd.
+Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag bij dispatch wordt bevestigd.
 \begin{figure}[H]
     \centering
     \makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{mip_iter_scaling.png}}
@@ -466,7 +462,7 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
     \label{fig:MIP}
 \end{figure}
 
-At commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die at dispatch zichtbaar en schalen met het aantal \textit{I-cache misses} worden gemaskeerd at commit.
+Bij commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die bij dispatch zichtbaar en schalen met het aantal \textit{I-cache misses} worden gemaskeerd bij commit.
 Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn.
 Het correct zijn van de 3 andere componenten wordt in wat volgt aangetoond.
 
@@ -507,6 +503,11 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie,
     \end{minipage}
 \end{figure}
 
+Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark bij commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
+gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie sectie \ref{dispatch}).
+In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
+Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
+
 \subsection{Backend stall en stalled}
 Analoog aan de \textit{drained} component van \textit{PICS} bij \textit{commit}, wordt het argument voor de verificatie van de \textit{backend stall} component van \textit{PICS} bij \textit{dispatch} afgeleid uit de andere onderbouwingen. Er is reeds een argument voor de \textit{base}, \textit{frontend stall} en \textit{misprediction} component van \textit{PICS} bij \textit{dispatch}, alsook de totale som. Logischerwijs zijn de cycli uit de som die niet voorkomen in één van de drie componenten, \textit{backend stall} cycli. Dit geeft dus enkel een argument voor het totaal aantal geattribueerde \textit{backend stall} cycli, maar zegt niets over of de cycli naar de juiste instructie gaan.
 
@@ -530,14 +531,6 @@ Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt g
 \end{figure}
 
 Als de kritieke \textit{load}-instructie nu meer uitgevoerd zal worden - door de \textit{gelinkte lijst} langer te maken - zou het logische gevolg moeten zijn dat het aantal \textit{stalled} cyli eveneens toeneemt. Figuur \ref{fig:stalled_scaling} toont het aantal \textit{datacache misses}, zoals gerapporteerd door de \textit{Sniper} simulator, samen met het totaal aantal geattribueerde \textit{stalled} cycli over alle \textit{PICS}. Merk op dat dit lineair gedrag zich niet zou blijven voortzetten. Bij een bepaalde grootte zal de \textit{gelinkte lijst} de grootte van de eerste niveau \textit{cache} overschreiden, en zal de \textit{load}-instructie bij elke uitvoering meer \textit{stalled} cycli bekomen op zijn \textit{PICS} bij \textit{commit}.
-
-Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark at commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
-gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie sectie \ref{dispatch}).
-In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
-Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
-
-\subsection{Backend stall}
-Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelder, aangezien \textit{backend stalls} vele verschillende oorzaken kunnen hebben. Wederom kan er echter geconcludeerd worden dat, als de som van alle geattribueerde cycli overeenkomt met het totale aantal verlopen cycli én de drie andere componenten correct zijn, ook de \textit{backend stall} component correct moet zijn.
 
 
 \newpage
@@ -691,6 +684,7 @@ De samenwerking, organisatie en communicatie binnen de groep verliepen over het 
 
 
 \section{Openstaande problemen}
+\label{subsection:open_prob}
 \subsection{Verloren instructies}
 Om de simulatiesnelheid te verhogen voor grote aantallen instructies kan de \textit{Sniper} simulator enkel het \textit{cachegedrag} van instructies simuleren in \textit{fast forward mode}. Het deel waarin de gebruiker effectief geïnteresseerd is, gemarkeerd als \textit{region of interest (ROI)}, wordt dan uitvoerig gesimuleerd in \textit{detailed mode}.
 
@@ -699,6 +693,9 @@ Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het eind
 
 \subsection{TLB misses}
 
+
+
+NIET VERGETEN TOTAAL INVARIANT CORRECTIE VERKLAREN
 
 \subsection{DVFS}
 \textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies.
@@ -740,8 +737,6 @@ Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het eind
 
 \bibitem{sniper_web}
     T. E. Carlson, W. Heirman, and L. Eeckhout, "The Sniper Multi-Core Simulator," snipersim.org. [Online]. Available: https://snipersim.org. [Accessed: Apr. 12, 2026].
-
-\appendix
-\section{Terminologie}
+\end{thebibliography}
 
 \end{document}
