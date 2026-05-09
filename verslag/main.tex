@@ -55,6 +55,8 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.6em}
 
+\hyphenation{cor-rect-heid}
+
 \thetitle{\color{ugentblue}Profileren van meerdradige applicaties met PICS}
 
 \infoboxa{\bfseries\large Project in het kader van  het Vakoverschrijdend Project, Groep BC01}
@@ -91,6 +93,8 @@ Begeleiders:
 Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt naarmate de parallelle code versneld kan worden op gespecialiseerde acceleratoren. Met een toename in de adoptie en mogelijkheden van deze hardware zal de impact van niet-versnelbare code op de totale prestatie van een applicatie toenemen. Softwareontwikkelaars zullen in de toekomst dus steeds aandacht moeten besteden aan het optimaliseren van de CPU-prestatie.
 
 Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. In dit project wordt er gericht op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van programmacode te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie kan verzameld worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores - variërend van één tot honderden - met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
+
+Alle code die gebruikt wordt voor de resultaten zijn beschikbaar op \href{https://github.com/louisverst/VOP-sniper}{GitHub}. De broncode van de \textit{Sniper} simulator is inbegrepen als submodule.
 
 
 \newpage
@@ -388,15 +392,13 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 
 \newpage
 
-
 \section{Invarianten}
-\label{sectie:invarianten}
-Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds moeten gelden. Om te controleren of de implementatie hieraan voldoet, kan worden nagegaan of ze consistent is met de bestaande output van de \textit{Sniper simulator}. Deze invarianten zullen gecontroleerd worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO} pijplijn uitbuit.
+Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en daarmee verzekeren dat alle gegenereerde data consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden. De invarianten vormen geen sluitend bewijs van correctheid, maar een schending ervan zou onmiskenbaar wijzen op een fout in de implementatie.
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld - er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli - de som van alle componenten van alle \textit{PICS} bij \textit{dispatch} - moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma. Dezelfde redenering geldt voor de commit-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
-Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \textit{ROB-cycli} bevat het totale aantal simulatiecycli zoals gerapporteerd door \textit{Sniper}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}, de bijhorende \(\Delta\)-kolommen geven het verschil met de referentie.
+Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
 
 \begin{table}[H]
     \centering
@@ -413,8 +415,8 @@ Tabel~\ref{tab:invariant_cycli} toont een selectie van benchmarks. De kolom \tex
         CCl   &   5{,}874.99 &   5{,}874.74 & \(-0.25\) &   5{,}871.72 & \(-3.27\) \\
         \hline
     \end{tabular}
-    \caption{Selectie van benchmarks. Alle waarden zijn in cycli. (Met afrondingsfouten)}
-    \label{tab:invariant_cycli}
+    \caption{Selectie van benchmarks. Alle waarden zijn in cycli.}
+    \label{tab:invariant_totaal}
 \end{table}
 
 \subsection{Base}
@@ -458,10 +460,10 @@ De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele 
 
 Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag at dispatch wordt bevestigd.
 \begin{figure}[H]
-\centering
-\makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{mip_iter_scaling.png}}
-\caption{MIP voor verschillend aantal iteraties}
-\label{fig:MIP}
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{mip_iter_scaling.png}}
+    \caption{MIP voor verschillend aantal iteraties}
+    \label{fig:MIP}
 \end{figure}
 
 At commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die at dispatch zichtbaar en schalen met het aantal \textit{I-cache misses} worden gemaskeerd at commit.
@@ -470,6 +472,7 @@ Het correct zijn van de 3 andere componenten wordt in wat volgt aangetoond.
 
 
 \subsection{Mispredictions}
+\label{subsec:mispredictions}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
 
 De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie, waardoor er dus veel foute voorspellingen zullen zijn.
@@ -504,6 +507,30 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie,
     \end{minipage}
 \end{figure}
 
+\subsection{Backend stall en stalled}
+Analoog aan de \textit{drained} component van \textit{PICS} bij \textit{commit}, wordt het argument voor de verificatie van de \textit{backend stall} component van \textit{PICS} bij \textit{dispatch} afgeleid uit de andere onderbouwingen. Er is reeds een argument voor de \textit{base}, \textit{frontend stall} en \textit{misprediction} component van \textit{PICS} bij \textit{dispatch}, alsook de totale som. Logischerwijs zijn de cycli uit de som die niet voorkomen in één van de drie componenten, \textit{backend stall} cycli. Dit geeft dus enkel een argument voor het totaal aantal geattribueerde \textit{backend stall} cycli, maar zegt niets over of de cycli naar de juiste instructie gaan.
+
+Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt gebruik gemaakt van een analoge redenering als bij de \textit{frontend stall} component van bij \textit{dispatch}, zoals beschreven in \ref{subsec:frontend stall}. De \textit{MM microbenchmark} loopt een \textit{gelinkte lijst} af. Elk element bevat, naast zich in het geheugen, ook het adres van het volgende element. Daarnaast wordt ervoor gezorgd dat elk element een volledige \textit{cachelijn} - het aantal bytes dat in één keer uit het geheugen geladen wordt en in de \textit{cache} opgeslagen wordt - inneemt. Elke \textit{load} van een element moet dus naar het hoofdgeheugen én elke \textit{load} is afhankelijk van de vorige voor het adres. De trage \textit{load}-instructie zal dus telkens vastzitten als oudste instructie in de \textit{ROB}, wat zal leiden tot cycli op de \textit{stalled} component van zijn \textit{PICS} bij \textit{commit}, zoals geïllustreerd op figuur \ref{fig:MM_commit}.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{MM_commit.png}
+        \caption{PICS bij commit voor de MM microbenchmark}
+        \label{fig:MM_commit}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{stalled_scaling.png}
+        \caption{Stalled cycli en datacache misses in functie van de lijstlengte}
+        \label{fig:stalled_scaling}
+    \end{minipage}
+\end{figure}
+
+Als de kritieke \textit{load}-instructie nu meer uitgevoerd zal worden - door de \textit{gelinkte lijst} langer te maken - zou het logische gevolg moeten zijn dat het aantal \textit{stalled} cyli eveneens toeneemt. Figuur \ref{fig:stalled_scaling} toont het aantal \textit{datacache misses}, zoals gerapporteerd door de \textit{Sniper} simulator, samen met het totaal aantal geattribueerde \textit{stalled} cycli over alle \textit{PICS}. Merk op dat dit lineair gedrag zich niet zou blijven voortzetten. Bij een bepaalde grootte zal de \textit{gelinkte lijst} de grootte van de eerste niveau \textit{cache} overschreiden, en zal de \textit{load}-instructie bij elke uitvoering meer \textit{stalled} cycli bekomen op zijn \textit{PICS} bij \textit{commit}.
+
 Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark at commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
 gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie sectie \ref{dispatch}).
 In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
@@ -514,6 +541,8 @@ Het verifiëren van de \textit{backend stall} component is een stuk ingewikkelde
 
 
 \newpage
+
+
 \section{Resultaten}
 \label{sectie:resultaten}
 Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseerd en eventueel geoptimaliseerd worden. In wat volgt worden twee zulke fragmenten besproken, die tevens aantonen dat \textit{PICS} bij \textit{dispatch} en \textit{PICS} bij \textit{commit} een complementair beeld geven.
@@ -660,6 +689,13 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 \section{Reflectie}
 De samenwerking, organisatie en communicatie binnen de groep verliepen over het algemeen zeer vlot. Alle studenten waren gemotiveerd en betrokken, waardoor taken efficiënt verdeeld en opgevolgd konden worden. Ook de promotor en begeleiders waren nauw betrokken bij het project. Er was wekelijks overleg mogelijk, waarbij voortgang besproken werd en ruimte was voor inhoudelijke discussie. Deze open communicatie zorgde ervoor dat problemen snel gesignaleerd en aangepakt konden worden, wat sterk bijdroeg aan het uiteindelijke resultaat.
 \section{Openstaande problemen}
+\label{subsection:open_prob}
+
+\subsection{Unknown instructions}
+
+\subsection{TLB misses}
+
+\subsection{Dvfs}
 
 
 
