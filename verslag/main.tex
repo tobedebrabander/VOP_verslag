@@ -688,14 +688,21 @@ Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de geli
 
 \section{Reflectie}
 De samenwerking, organisatie en communicatie binnen de groep verliepen over het algemeen zeer vlot. Alle studenten waren gemotiveerd en betrokken, waardoor taken efficiënt verdeeld en opgevolgd konden worden. Ook de promotor en begeleiders waren nauw betrokken bij het project. Er was wekelijks overleg mogelijk, waarbij voortgang besproken werd en ruimte was voor inhoudelijke discussie. Deze open communicatie zorgde ervoor dat problemen snel gesignaleerd en aangepakt konden worden, wat sterk bijdroeg aan het uiteindelijke resultaat.
-\section{Openstaande problemen}
-\label{subsection:open_prob}
 
-\subsection{Unknown instructions}
+
+\section{Openstaande problemen}
+\subsection{Verloren instructies}
+Om de simulatiesnelheid te verhogen voor grote aantallen instructies kan de \textit{Sniper} simulator enkel het \textit{cachegedrag} van instructies simuleren in \textit{fast forward mode}. Het deel waarin de gebruiker effectief geïnteresseerd is, gemarkeerd als \textit{region of interest (ROI)}, wordt dan uitvoerig gesimuleerd in \textit{detailed mode}.
+
+Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het einde van de \textit{ROI} schakelt de simulator terug over op \textit{fast forward mode} onafhankelijk van de staat van de \textit{ROB}. De \textit{PICS} bij \textit{commit} van de instructies die zich nog in de \textit{ROB} bevinden zullen dus niet volledig zijn. Ook het overschakelen van \textit{fast forward mode} naar \textit{detailed mode} in het begin van de \textit{ROI} leidt tot verlies van nauwkeurigheid. Het programma dat de instructies uit de \textit{binary} extraheert werkt losgekoppeld van de simulator zelf. Er zijn al een reeks instructies uit de \textit{ROI} ongedetailleerd verwerkt voordat het extractieprogramma op de hoogte is dat het instructies in detail moet verwerken. Voor die instructies heeft de simulator dus te weinig informatie om \textit{PICS} op te stellen.
+
 
 \subsection{TLB misses}
 
-\subsection{Dvfs}
+
+\subsection{DVFS}
+\textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies.
+
 
 
 
