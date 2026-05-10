@@ -115,7 +115,7 @@ Om elke cyclus instructies uit te voeren moeten er dus elke cyclus nuttige instr
 
 
 \subsubsection{De out-of-order pijplijn}
-In deze sectie wordt in meer detail besproken hoe een instructie, van \textit{fetch} tot aan \textit{commit}, verwerkt wordt. Figuur \ref{fig:ooo-pipeline} toont een geabstraheerde, schematische voorstelling van een moderne \textit{OoO} pijplijn. De pijlen in stippellijn duiden op operaties die \textit{out-of-order} kunnen, zoals het naar de \textit{execution units} brengen - wat \textit{issue} genoemd wordt. De pijlen met een volle pijl zijn operaties die \texit{in-order} moeten gebeueren. De \textit{dispatch} en de \textit{commit} van instructies gebeurt dus altijd \textit{in-order}.
+In deze sectie wordt in meer detail besproken hoe een instructie, van \textit{fetch} tot aan \textit{commit}, verwerkt wordt. Figuur \ref{fig:ooo-pipeline} toont een geabstraheerde, schematische voorstelling van een moderne \textit{OoO} pijplijn. De pijlen in stippellijn duiden op operaties die \textit{out-of-order} kunnen, zoals het naar de \textit{execution units} brengen - wat \textit{issue} genoemd wordt. De pijlen met een volle pijl zijn operaties die \textit{in-order} moeten gebeueren. De \textit{dispatch} en de \textit{commit} van instructies gebeurt dus altijd \textit{in-order}.
 
 \begin{figure}[H]
     \centering
@@ -267,7 +267,7 @@ Aangezien een \textit{statische instructie} meerdere keren kan worden uitgevoerd
 Hierbij stellen $N_{\text{e}}$ en $N_{\mu}$ respectievelijk het aantal uitvoeringen
 van de \textit{statische instructie} en het aantal \textit{µops} waaruit deze instructie
 bestaat voor. $\text{PICS}_{\text{b}}$ staat voor de base component van de
-\textit{statische instructie}..
+\textit{statische instructie}.
 
 
 
@@ -389,6 +389,7 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
 \newpage
 
 \section{Invarianten}
+\label{sectie:invarianten}
 Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en daarmee verzekeren dat alle gegenereerde data consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden. De invarianten vormen geen sluitend bewijs van correctheid, maar een schending ervan zou onmiskenbaar wijzen op een fout in de implementatie.
 
 \subsection{Totaal aantal cycli}
@@ -425,6 +426,7 @@ $N_s$ stelt het aantal statische instructies in het programma voor, $N_d$ het to
 
 Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in formule (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchbreedte}\).
 \subsection{Frontend stalls en Drained}
+\label{subsec:frontend stall}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
 Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pijplijn} uitbuit.
 Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} evenredig meeschaalt.
@@ -696,10 +698,10 @@ Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het eind
 TLB-misses worden apart van de reguliere instructiestroom verwerkt en omzeilen de modellering van de \textit{ROB} volledig. Omdat het attribueren van de \textit{PICS} gebeurt in de code die de \textit{ROB} modelleert, worden de cycli van een TLB-miss aan geen enkele instructie toegewezen.
 
 
-In sectie \ref{subsec:backend_stall} werd gesproken over een correctie op het totaal aantal cycli dat gerapporteerd werd door de \textit{Sniper} simulator waarmee de som over alle \textit{PICS} vergeleken werd. Die correctie is de som }van de cycli die gesimuleerd werden voor de verloren instructies en de \textit{TLB misses}.
+In sectie \ref{subsec:backend_stall} werd gesproken over een correctie op het totaal aantal cycli dat gerapporteerd werd door de \textit{Sniper} simulator waarmee de som over alle \textit{PICS} vergeleken werd. Die correctie is de som van de cycli die gesimuleerd werden voor de verloren instructies en de \textit{TLB misses}.
 
 \subsection{DVFS}
-\textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies. De \textit{Sniper} simulator kan dit moddeleren. Desondanks wordt er bij de huidige implementatie van \textit{PICS} uitgegaan van een constante klokperiode. Bij elke aanrekening van een cyclus wordt een klokperiode geteld. Het totaal wordt dan op het einde van de simulatie éénmalig door de klokperiode gedeeld om het aantal cycli te bekomen.
+\textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies. De \textit{Sniper} simulator kan dit modelleren. Desondanks wordt er bij de huidige implementatie van \textit{PICS} uitgegaan van een constante klokperiode. Bij elke aanrekening van een cyclus wordt een klokperiode geteld. Het totaal wordt dan op het einde van de simulatie éénmalig door de klokperiode gedeeld om het aantal cycli te bekomen.
 
 
 
