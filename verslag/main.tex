@@ -386,14 +386,12 @@ Het identificeren van de verantwoordelijke \textit{µop} gebeurt als volgt:
                             De latentie wordt in dat geval toegewezen aan de \textit{drained} component van de corresponderende \textit{instructie}.
 \end{enumerate}
 
-\newpage
-
 \section{Invarianten}
 \label{sectie:invarianten}
 Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invarianten: eigenschappen die steeds gelden voor \textit{PICS}. De invarianten zullen de data gegenereerd door de implementatie van \textit{PICS} vergelijken met de bestaande output van de \textit{Sniper} simulator, en daarmee verzekeren dat alle gegenereerde data consistent is. Deze invarianten zullen toegepast worden aan de hand van \textit{microbenchmarks}. Een \textit{microbenchmark} is een klein programma dat één component van de \textit{OoO}-pijplijn belast, zodat het effect ervan geïsoleerd gemeten kan worden. De invarianten vormen geen sluitend bewijs van correctheid, maar een schending ervan zou onmiskenbaar wijzen op een fout in de implementatie.
 
 \subsection{Totaal aantal cycli}
-Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld — er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
+Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld - er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
 Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper simulator}. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in sectie \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
 
@@ -443,14 +441,6 @@ De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele 
         t %= 0xFFFFFF3;
         t += 6;
         t *= 10;
-        t += 1;
-        t *= 2;
-        t -= 1;
-        t &= 0xFFF00FFF;
-        t ^= 0x14022;
-        t %= 0xFFFFFF3;
-        t += 6;
-        t *= 10;
     ...
 \end{lstlisting}
 \vspace{-1em}
@@ -464,9 +454,9 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
     \label{fig:MIP}
 \end{figure}
 
-Bij commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die bij dispatch zichtbaar en schalen met het aantal \textit{I-cache misses} worden gemaskeerd bij commit.
-Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn.
-Het correct zijn van de 3 andere componenten wordt in wat volgt aangetoond.
+Bij commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die bij dispatch zichtbaar zijn en schalen met het aantal \textit{I-cache misses} worden gemaskeerd bij commit.
+Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn. Dit is een argument voor het correct zijn van het totaal aantal \textit{backend stall} cycli. Niet of de cycli naar de correcte instructies gaan.
+Het correct zijn van de 3 andere componenten wordt in wat nu verder aangetoond.
 
 
 \subsection{Mispredictions}
@@ -514,7 +504,7 @@ Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \texti
 \label{subsec:backend_stall}
 Analoog aan de \textit{drained} component van \textit{PICS} bij \textit{commit}, wordt het argument voor de verificatie van de \textit{backend stall} component van \textit{PICS} bij \textit{dispatch} afgeleid uit de andere onderbouwingen. Er is reeds een argument voor de \textit{base}, \textit{frontend stall} en \textit{misprediction} component van \textit{PICS} bij \textit{dispatch}, alsook de totale som. Logischerwijs zijn de cycli uit de som die niet voorkomen in één van de drie componenten, \textit{backend stall} cycli. Dit geeft dus enkel een argument voor het totaal aantal geattribueerde \textit{backend stall} cycli, maar zegt niets over of de cycli naar de juiste instructie gaan.
 
-Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt gebruik gemaakt van een analoge redenering als bij de \textit{frontend stall} component van bij \textit{dispatch}, zoals beschreven in \ref{subsec:frontend stall}. De \textit{MM microbenchmark} loopt een \textit{gelinkte lijst} af. Elk element bevat, naast zich in het geheugen, ook het adres van het volgende element. Daarnaast wordt ervoor gezorgd dat elk element een volledige \textit{cachelijn} - het aantal bytes dat in één keer uit het geheugen geladen wordt en in de \textit{cache} opgeslagen wordt - inneemt. Elke \textit{load} van een element moet dus naar het hoofdgeheugen én elke \textit{load} is afhankelijk van de vorige voor het adres. De trage \textit{load}-instructie zal dus telkens vastzitten als oudste instructie in de \textit{ROB}, wat zal leiden tot cycli op de \textit{stalled} component van zijn \textit{PICS} bij \textit{commit}, zoals geïllustreerd op figuur \ref{fig:MM_commit}.
+Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt gebruik gemaakt van een analoge redenering als bij de \textit{frontend stall} component van bij \textit{dispatch}, zoals beschreven in sectie \ref{subsec:frontend stall}. De \textit{MM microbenchmark} loopt een \textit{gelinkte lijst} af. Elk element bevat, naast zich in het geheugen, ook het adres van het volgende element. Daarnaast wordt ervoor gezorgd dat elk element een volledige \textit{cachelijn} - het aantal bytes dat in één keer uit het geheugen geladen wordt en in de \textit{cache} opgeslagen wordt - inneemt. Elke \textit{load} van een element moet dus naar het hoofdgeheugen én elke \textit{load} is afhankelijk van de vorige voor het adres. De trage \textit{load}-instructie zal dus telkens vastzitten als oudste instructie in de \textit{ROB}, wat zal leiden tot cycli op de \textit{stalled} component van zijn \textit{PICS} bij \textit{commit}, zoals geïllustreerd op Figuur \ref{fig:MM_commit}.
 
 \begin{figure}[H]
     \centering
@@ -534,10 +524,6 @@ Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt g
 \end{figure}
 
 Als de kritieke \textit{load}-instructie nu meer uitgevoerd zal worden - door de \textit{gelinkte lijst} langer te maken - zou het logische gevolg moeten zijn dat het aantal \textit{stalled} cyli eveneens toeneemt. Figuur \ref{fig:stalled_scaling} toont het aantal \textit{datacache misses}, zoals gerapporteerd door de \textit{Sniper} simulator, samen met het totaal aantal geattribueerde \textit{stalled} cycli over alle \textit{PICS}. Merk op dat dit lineair gedrag zich niet zou blijven voortzetten. Bij een bepaalde grootte zal de \textit{gelinkte lijst} de grootte van de eerste niveau \textit{cache} overschreiden, en zal de \textit{load}-instructie bij elke uitvoering meer \textit{stalled} cycli bekomen op zijn \textit{PICS} bij \textit{commit}.
-
-
-\newpage
-
 
 \section{Resultaten}
 \label{sectie:resultaten}
@@ -691,7 +677,7 @@ De samenwerking, organisatie en communicatie binnen de groep verliepen over het 
 \subsection{Verloren instructies}
 Om de simulatiesnelheid te verhogen voor grote aantallen instructies kan de \textit{Sniper} simulator enkel het \textit{cachegedrag} van instructies simuleren in \textit{fast forward mode}. Het deel waarin de gebruiker effectief geïnteresseerd is, gemarkeerd als \textit{region of interest (ROI)}, wordt dan uitvoerig gesimuleerd in \textit{detailed mode}.
 
-Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het einde van de \textit{ROI} schakelt de simulator terug over op \textit{fast forward mode} onafhankelijk van de staat van de \textit{ROB}. De \textit{PICS} bij \textit{commit} van de instructies die zich nog in de \textit{ROB} bevinden zullen dus niet volledig zijn. Ook het overschakelen van \textit{fast forward mode} naar \textit{detailed mode} in het begin van de \textit{ROI} leidt tot verlies van nauwkeurigheid. Het programma dat de instructies uit de \textit{binary} extraheert werkt losgekoppeld van de simulator zelf. Er zijn al een reeks instructies uit de \textit{ROI} ongedetailleerd verwerkt voordat het extractieprogramma op de hoogte is dat het instructies in detail moet verwerken. Voor die instructies heeft de simulator dus te weinig informatie om \textit{PICS} op te stellen.
+Dit heeft echter gevolgen voor de implementatie van \textit{PICS}. Op het einde van de \textit{ROI} schakelt de simulator terug over op \textit{fast forward mode} onafhankelijk van de staat van de \textit{ROB}. De \textit{PICS} bij \textit{commit} van de instructies die zich nog in de \textit{ROB} bevinden zullen dus niet volledig zijn. Ook het overschakelen van \textit{fast forward mode} naar \textit{detailed mode} in het begin van de \textit{ROI} leidt tot verlies van nauwkeurigheid. Het programma dat de instructies uit de \textit{binary} extraheert werkt losgekoppeld van de simulator zelf. Er zijn al een reeks instructies uit de \textit{ROI} ongedetailleerd verwerkt voordat het extractieprogramma op de hoogte is dat het instructies in detail moet verwerken. Voor die instructies heeft de simulator dus te weinig informatie om \textit{PICS} op te stellen.
 
 
 \subsection{TLB misses}
@@ -707,6 +693,15 @@ In sectie \ref{subsec:backend_stall} werd gesproken over een correctie op het to
 
 \section{Besluit}
 
+In dit project werd PICS succesvol geïmplementeerd in de Sniper simulator, zowel bij dispatch als bij commit. De implementatie maakt het mogelijk om cycli tijdsproportioneel toe te wijzen aan statische instructies en zo inzicht te krijgen in waar uitvoeringstijd verloren gaat.
+
+Bij dispatch worden cycli onderverdeeld in de componenten base, frontend stall, backend stall en misprediction. Bij commit gebeurt dit via compute, stalled, drained en flushed. Voor elke stall wordt de volledige latentie correct geattribueerd aan de verantwoordelijke instructie.
+
+De implementatie werd gevalideerd aan de hand van microbenchmarks en invarianten. Daaruit bleek dat het totaal aantal geattribueerde cycli overeenkomt met de simulatieduur en dat de verschillende componenten het verwachte gedrag vertonen.
+
+Daarnaast tonen de resultaten aan dat PICS bij dispatch en commit een complementair beeld geven van prestatieproblemen. Afhankelijk van het meetmoment kunnen andere bottlenecks zichtbaar worden. Hierdoor is het belangrijk om beide vormen van profilering samen te gebruiken bij prestatieanalyse.
+
+De implementatie biedt ontwikkelaars een manier om prestatieproblemen in meerdradige applicaties gerichter te analyseren en optimaliseren. Hoewel er nog openstaande problemen zijn, zoals verloren instructies, TLB misses en DVFS, vormt dit project een werkende basis voor verdere uitbreiding van PICS binnen de Sniper simulator.
 
 \newpage
 
