@@ -94,7 +94,7 @@ Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt n
 
 Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. In dit project wordt er gericht op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van programmacode te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie kan verzameld worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores - variërend van één tot honderden - met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
 
-Alle code die gebruikt wordt voor de resultaten zijn beschikbaar op \href{https://github.com/louisverst/VOP-sniper}{GitHub}. De broncode van de \textit{Sniper} simulator is inbegrepen als submodule.
+Alle code die gebruikt werd voor de resultaten is beschikbaar op \href{https://github.com/louisverst/VOP-sniper}{GitHub}. De broncode van de \textit{Sniper} simulator is inbegrepen als submodule.
 
 
 \newpage
@@ -509,6 +509,7 @@ In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zicht
 Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
 
 \subsection{Backend stall en stalled}
+\label{subsec:backend_stall}
 Analoog aan de \textit{drained} component van \textit{PICS} bij \textit{commit}, wordt het argument voor de verificatie van de \textit{backend stall} component van \textit{PICS} bij \textit{dispatch} afgeleid uit de andere onderbouwingen. Er is reeds een argument voor de \textit{base}, \textit{frontend stall} en \textit{misprediction} component van \textit{PICS} bij \textit{dispatch}, alsook de totale som. Logischerwijs zijn de cycli uit de som die niet voorkomen in één van de drie componenten, \textit{backend stall} cycli. Dit geeft dus enkel een argument voor het totaal aantal geattribueerde \textit{backend stall} cycli, maar zegt niets over of de cycli naar de juiste instructie gaan.
 
 Voor de \textit{stalled} component van \textit{PICS} bij \textit{commit} wordt gebruik gemaakt van een analoge redenering als bij de \textit{frontend stall} component van bij \textit{dispatch}, zoals beschreven in \ref{subsec:frontend stall}. De \textit{MM microbenchmark} loopt een \textit{gelinkte lijst} af. Elk element bevat, naast zich in het geheugen, ook het adres van het volgende element. Daarnaast wordt ervoor gezorgd dat elk element een volledige \textit{cachelijn} - het aantal bytes dat in één keer uit het geheugen geladen wordt en in de \textit{cache} opgeslagen wordt - inneemt. Elke \textit{load} van een element moet dus naar het hoofdgeheugen én elke \textit{load} is afhankelijk van de vorige voor het adres. De trage \textit{load}-instructie zal dus telkens vastzitten als oudste instructie in de \textit{ROB}, wat zal leiden tot cycli op de \textit{stalled} component van zijn \textit{PICS} bij \textit{commit}, zoals geïllustreerd op figuur \ref{fig:MM_commit}.
@@ -692,15 +693,13 @@ Dit heeft echter gevolgen voor onze implementatie van \textit{PICS}. Op het eind
 
 
 \subsection{TLB misses}
+TLB-misses worden apart van de reguliere instructiestroom verwerkt en omzeilen de modellering van de \textit{ROB} volledig. Omdat het attribueren van de \textit{PICS} gebeurt in de code die de \textit{ROB} modelleert, worden de cycli van een TLB-miss aan geen enkele instructie toegewezen.
 
 
-
-NIET VERGETEN TOTAAL INVARIANT CORRECTIE VERKLAREN
+In sectie \ref{subsec:backend_stall} werd gesproken over een correctie op het totaal aantal cycli dat gerapporteerd werd door de \textit{Sniper} simulator waarmee de som over alle \textit{PICS} vergeleken werd. Die correctie is de som }van de cycli die gesimuleerd werden voor de verloren instructies en de \textit{TLB misses}.
 
 \subsection{DVFS}
-\textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies.
-
-
+\textit{Dynamic voltage and frequency scaling (DVFS)} is een techniek waarbij een processor zijn klokfrequentie (en bijhorende voedingsspanning) dynamisch aanpast om energieverbruik te beperken zonder onnodig prestatieverlies. De \textit{Sniper} simulator kan dit moddeleren. Desondanks wordt er bij de huidige implementatie van \textit{PICS} uitgegaan van een constante klokperiode. Bij elke aanrekening van een cyclus wordt een klokperiode geteld. Het totaal wordt dan op het einde van de simulatie éénmalig door de klokperiode gedeeld om het aantal cycli te bekomen.
 
 
 
