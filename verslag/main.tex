@@ -95,7 +95,7 @@ Amdahl's law toont aan dat het relatieve belang van sequentiële code toeneemt n
 
 Daarvoor is inzicht nodig in waar de processorpijplijn tijd verliest bij de uitvoering van individuele instructies. Dit project focust op het profileren van meerdradige applicaties in de Sniper softwaresimulator, wat als doel heeft softwareontwikkelaars in staat te stellen om de CPU-prestatie van programmacode te visualiseren, om zo gerichte optimalisaties door te kunnen voeren. Het maakt gebruik van een recent voorgestelde profileringsmethode, de \textit{Per-Instruction Cycle Stacks (PICS)}. Om een uitgebreid profiel van de applicatie te verkrijgen, wordt het gedrag per instructie op twee plaatsen in de processorpijplijn onderzocht. Er wordt onderzocht hoe profileringsinformatie verzameld kan worden in de simulator voor applicaties die uitgevoerd worden op zowel enkele als meerdere cores - variërend van één tot honderden - met als doel inzicht te verkrijgen in de invloed van het gedrag van instructies in de processorpijplijn op de uiteindelijke uitvoeringstijd van een applicatie.
 
-Alle code die gebruikt werd voor de resultaten is beschikbaar op GitHub (https://github.com/louisverst/VOP-sniper). De broncode van de \textit{Sniper} simulator is inbegrepen als submodule.
+Alle code die gebruikt werd voor de resultaten is beschikbaar op GitHub\footnote{\url{https://github.com/louisverst/VOP-sniper}}. De broncode van de \textit{Sniper}simulator is inbegrepen als submodule.
 
 
 \newpage
@@ -199,8 +199,8 @@ De planning is weergegeven in Figuur~\ref{fig:planning}. Initieel was voor Fase 
         \begin{ganttchart}[
             hgrid,
             vgrid,
-            x unit=0.8cm,
-            y unit chart=0.65cm
+            x unit=0.55cm,
+            y unit chart=0.5cm
         ]{1}{12}
             \gantttitle{Planning (weken)}{12} \\
             \gantttitlelist{1,...,12}{1} \\
@@ -483,6 +483,8 @@ Het correct zijn van de drie andere componenten wordt nu verder aangetoond.
 \label{subsec:misprediction}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel foutieve \textit{sprongvoorspellingen}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het opschalen van het aantal iteraties leidt tot meer foutieve sprongvoorspellingen wat op zijn beurt leidt tot meer cycli toegeschreven aan de \textit{misprediction} componenten.
 
+\newpage
+
 De gebruikte \textit{microbenchmarks} bestaat uit een lus met een willekeurige sprongconditie, waardoor er dus veel foute voorspellingen zullen zijn.
 \begin{lstlisting}[language=C]
     ...
@@ -552,40 +554,43 @@ Na het verifiëren van de \textit{PICS} kunnen enkele codefragmenten geanalyseer
 \subsection{Optimalisatie van PSum}
 \label{dispatch}
 Als eerste programma wordt PSUM gekozen. Een \textit{array} wordt partieel opgeteld gedicteerd door een willekeurig gegenereerde \textit{array}. De kern van het programma wordt gegeven door het volgende fragment:
-\begin{lstlisting}[language=C]
-    ...
-    for (i = 0; i < ITER + zero; ++i) {
-        if (randArr[i]) {
-            index = (i * STRIDE) % ARRAY_SIZE;
-            t += data[index];
-        }
-    }
-    ...
-\end{lstlisting}
-\vspace{-1em}
-\hspace{5em}
-\noindent\textit{\small C-code van PSum}
-
 Bij de uitvoering van deze code wordt voornamelijk een prestatieverlies verwacht door foute sprongvoorspellingen, aangezien de sprongconditie afhankelijk is van een willekeurige waarde. Om te bepalen welke instructie hier exact verantwoordelijk voor is, wordt de gegenereerde assembly-code geanalyseerd:
-\begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jnz,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx}]
-    ...
-    401780:       cmpb   $0x0,(%rcx)
-    401783:       je     40179f <loop+0x5f>
-    401785:       mov    %eax,%edx
-    401787:       imul   %r9,%rdx
-    40178b:       shr    $0x22,%rdx
-    40178f:       lea    (%rdx,%rdx,4),%r8d
-    401793:       mov    %eax,%edx
-    401795:       sub    %r8d,%edx
-    401798:       movslq %edx,%rdx
-    40179b:       add    -0x28(%rsp,%rdx,4),%esi
-    40179f:       add    $0x2,%eax
 
-    ...
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\begin{lstlisting}[language=C]
+...
+for (i = 0; i < ITER + zero; ++i) {
+    if (randArr[i]) {
+        index = (i * STRIDE) % ARRAY_SIZE;
+        t += data[index];
+    }
+}
+...
 \end{lstlisting}
 \vspace{-1em}
-\hspace{5em}
+\noindent\textit{\small C-code van PSum}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.52\textwidth}
+\begin{lstlisting}[morekeywords={cmpb,je,mov,imul,shr,lea,sub,movslq,add,cmp,jnz,rcx,edx,eax,r8d,rsp,esi,edi,r9,rdx}]
+...
+401780:  cmpb   $0x0,(%rcx)
+401783:  je     40179f <loop+0x5f>
+401785:  mov    %eax,%edx
+401787:  imul   %r9,%rdx
+40178b:  shr    $0x22,%rdx
+40178f:  lea    (%rdx,%rdx,4),%r8d
+401793:  mov    %eax,%edx
+401795:  sub    %r8d,%edx
+401798:  movslq %edx,%rdx
+40179b:  add    -0x28(%rsp,%rdx,4),%esi
+40179f:  add    $0x2,%eax
+...
+\end{lstlisting}
+\vspace{-1em}
 \noindent\textit{\small Assembly code van PSum}
+\end{minipage}
 
 De interessante instructie is \verb|je| op adres \verb|401783| - de spronginstructie waarvan de conditie afhangt van \verb|randArr[i]|. Indien \verb|randArr[i]| gelijk is aan nul wordt de sprong genomen en de berekening van \verb|t| overgeslagen. In het andere geval worden de instructies van \verb|401785| tot \verb|40179b| uitgevoerd, waarbij \verb|index| berekend wordt en \verb|t| geaccumuleerd wordt. Beide paden komen samen op \verb|40179f|, waarna de volgende iteratie begint.
 
