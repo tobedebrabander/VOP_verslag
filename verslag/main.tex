@@ -449,7 +449,7 @@ De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele 
 Het analyseren van de benchmark voor verschillende aantal iteraties resulteert in Figuur~\ref{fig:MIP}. Het is duidelijk dat het verwachte gedrag bij dispatch wordt bevestigd.
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{mip_iter_scaling.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=0.8\textwidth]{fronted_stalls_scaling.png}}
     \caption{MIP voor verschillend aantal iteraties}
     \label{fig:MIP}
 \end{figure}
@@ -482,14 +482,14 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie,
     \centering
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{cch_iter_scaling_dispatch.png}
+        \includegraphics[width=\linewidth]{misprediction_scaling.png}
         \caption{CCh dispatch voor verschillend aantal iteraties}
         \label{fig:CCh_dispatch}
     \end{minipage}
     \hfill
     \begin{minipage}{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{cch_iter_scaling_commit.png}
+        \includegraphics[width=\linewidth]{flushed_scaling.png}
         \caption{CCh commit voor verschillend aantal iteraties}
         \label{fig:CCh_commit}
     \end{minipage}
