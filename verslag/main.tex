@@ -391,7 +391,7 @@ Deze sectie onderbouwt de implementatie van \textit{PICS} aan de hand van invari
 \subsection{Totaal aantal cycli}
 Per cyclus kent \textit{PICS} de cyclus (of een fractie ervan, zoals in sectie \ref{subsection:PICS bij dispatch}) toe aan de instructies die in die cyclus dispatchen. Elke cyclus wordt volledig verdeeld - er gaat niets verloren en er wordt niets bijgeteld. De totale som van alle toegewezen cycli over alle \textit{PICS} bij \textit{dispatch} moet daarom per definitie gelijk zijn aan de totale gesimuleerde duur van het programma (in cycli). Eenzelfde redenering kan gemaakt worden voor de \textit{commit}-stacks, die onafhankelijk tot dezelfde som moeten leiden.
 
-Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper} simulator. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in sectie \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie.
+Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}. De kolom \textit{ROB-cycli} bevat het totaal aantal simulatiecycli zoals gerapporteerd door de \textit{Sniper} simulator. Er wordt echter een correctie uitgevoerd op dit aantal, wat onderbouwt wordt in sectie \ref{subsection:open_prob}. De kolommen \textit{\(PICS_d\)} en \textit{\(PICS_c\)} bevatten de som van alle \textit{PICS}-waarden bij respectievelijk \textit{dispatch} en \textit{commit}. De bijhorende \(\Delta\)-kolommen geven het verschil in absolute cycli met de referentie. De \(\Delta\) ligt bij \textit{commit} hoger doordat de gedetaileerde simulatie afsluit wanneer sommige \textit{µops} nog niet gesimuleerd zijn, zoals verder uitgelegd in sectie \ref{subsection:open_prob}.
 
 \begin{table}[H]
     \centering
@@ -399,16 +399,16 @@ Tabel~\ref{tab:invariant_totaal} toont een selectie van \textit{microbenchmarks}
         \hline
         Benchmark & ROB-cycli & \(PICS_d\) & \(\Delta_d\) & \(PICS_c\) & \(\Delta_c\) \\
         \hline
-        ED1   & 118{,}438.73 & 118{,}438.70 & \(-0.03\) & 118{,}435.71 & \(-3.03\) \\
-        STL2b & 295{,}280.33 & 295{,}280.26 & \(-0.07\) & 295{,}277.22 & \(-3.11\) \\
-        MCS   & 245{,}360.45 & 245{,}360.31 & \(-0.14\) & 245{,}357.44 & \(-3.00\) \\
-        MI    &  48{,}538.89 &  48{,}538.75 & \(-0.14\) &  48{,}535.50 & \(-3.39\) \\
-        DPcvt &  21{,}845.95 &  21{,}845.75 & \(-0.20\) &  21{,}842.72 & \(-3.23\) \\
-        EI    &   7{,}197.98 &   7{,}197.75 & \(-0.23\) &   7{,}194.70 & \(-3.28\) \\
-        CCl   &   5{,}874.99 &   5{,}874.74 & \(-0.25\) &   5{,}871.72 & \(-3.27\) \\
+        ED1   & 118.438,73 & 118.438,70 & \(-0,03\) & 118.435,71 & \(-3,03\) \\
+        STL2b & 295.280,33 & 295.280,26 & \(-0,07\) & 295.277,22 & \(-3,11\) \\
+        MCS   & 245.360,45 & 245.360,31 & \(-0,14\) & 245.357,44 & \(-3,00\) \\
+        MI    &  48.538,89 &  48.538,75 & \(-0,14\) &  48.535,50 & \(-3,39\) \\
+        DPcvt &  21.845,95 &  21.845,75 & \(-0,20\) &  21.842,72 & \(-3,23\) \\
+        EI    &   7.197,98 &   7.197,75 & \(-0,23\) &   7.194,70 & \(-3,28\) \\
+        CCl   &   5.874,99 &   5.874,74 & \(-0,25\) &   5.871,72 & \(-3,27\) \\
         \hline
     \end{tabular}
-    \caption{Selectie van benchmarks. Alle waarden zijn in cycli.}
+    \caption{Selectie van benchmarks. Alle waarden worden uitgedrukt in cycli.}
     \label{tab:invariant_totaal}
 \end{table}
 
@@ -653,15 +653,15 @@ De \verb|add| op adres \verb|401780| is de eerste instructie die een \textit{loa
 Figuur \ref{fig:AA} toont duidelijk via de \textit{PICS} bij \textit{commit} dat de \verb|add| instructie die hierboven vermeld is de bottleneck is. Merkwaardig is dat de \textit{PICS} bij \textit{dispatch} de \verb|test| instructie aanduidt als bottleneck. Dit is echter te verwachten aangezien — wegens constructie van de \textit{PICS} bij \textit{dispatch}, zie sectie \ref{subsection:PICS bij dispatch} — de cycli worden geattribueerd aan de instructie die op dat moment niet kan worden \textit{gedispatcht}. Op het moment dat de \verb|add| instructie wacht op een \textit{load}, staat de \verb|test| instructie als volgende klaar om \textit{gedispatcht} te worden en krijgt bijgevolg de cycli toegewezen. Dit toont opnieuw aan dat beide meetmomenten een complementair beeld geven en dat het visualiseren van de \textit{PICS} bij \textit{commit} essentieel is voor een correcte analyse.
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_nl.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA.png}}
     \caption{PICS van AA}
     \label{fig:AA}
 \end{figure}
 
-Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de gelinkte lijst. Er wordt gekozen om aan \textit{arena allocation} te doen. Dit wil zeggen dat wanneer de eerste knoop wordt gealloceerd, er onmiddellijk een groter blok wordt gealloceerd voor meerdere knopen. De volgende knopen worden dan gealloceerd door een pointer op te schuiven. Er moet echter een afweging gemaakt worden over hoeveel ruimte er wordt gealloceerd: een te groot blok reserveren verspilt mogelijks geheugen en maakt het moeilijker een vrije blok te vinden, terwijl een te klein blok weinig voordeel biedt. Als er wordt gewerkt met \textit{arena allocation} waarbij er onmiddellijk vijf knopen worden gealloceerd, zijn de bijhorende \textit{PICS} te zien in Figuur~\ref{fig:AA_opt}. Het is duidelijk dat het aantal cycli gespendeerd in een \textit{backend stall} daalt. Het initieel alloceren van meer knopen biedt echter een beperkt voordeel, aangezien de cachegrootte een natuurlijke grens oplegt.
+Als optimalisatie wordt er een afweging gemaakt binnen het alloceren van de gelinkte lijst. Er wordt gekozen om aan \textit{arena allocation} te doen. Dit wil zeggen dat wanneer de eerste knoop wordt gealloceerd, er onmiddellijk een groter blok wordt gealloceerd voor meerdere knopen. De volgende knopen worden dan gealloceerd door een pointer op te schuiven. Er moet echter een afweging gemaakt worden over hoeveel ruimte er wordt gealloceerd: een te groot blok reserveren verspilt mogelijks geheugen en maakt het moeilijker een vrije blok te vinden, terwijl een te klein blok weinig voordeel biedt. Als er wordt gewerkt met \textit{arena allocation} waarbij er onmiddellijk vijf knopen worden gealloceerd, zijn de bijhorende \textit{PICS} te zien in Figuur~\ref{fig:AA_opt}. Het aantal \textit{backend stall} cycli daalt van \(573 292\) naar \(376 733\), een daling van \(34\%\). Het initieel alloceren van meer knopen biedt echter een beperkt voordeel, aangezien de cachegrootte een natuurlijke grens oplegt.
 \begin{figure}[H]
     \centering
-    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AAOpt_nl.png}}
+    \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{AA_opt.png}}
     \caption{PICS van AAOpt}
     \label{fig:AA_opt}
 \end{figure}
