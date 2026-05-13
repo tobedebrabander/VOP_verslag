@@ -418,7 +418,28 @@ Voor de uitvoering van het programma geldt de volgende invariant:
 \end{equation}
 $N_s$ stelt het aantal statische instructies in het programma voor, $N_d$ het totaal aantal dynamisch uitgevoerde \textit{µops}, beide verkregen uit de output van de \textit{Sniper} simulator. $\text{PICS}_{b,i}$ stelt de basiscomponent van de $i$-de statische instructie voor zoals gedefinieerd in formule (\ref{eq:pics_base}).
 
-Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in formule (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchbreedte}\).
+Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een deel van de cyclus toegeschreven krijgt aan de \textit{base}-component. Wegens constructie, zoals uitgelegd in formule (\ref{eq:pics_base}), bedraagt dit precies \(1/\textit{dispatchbreedte}\). Tabel \ref{tab:invariant_base} vergelijkt de som over alle \textit{PICS} van enkele benchmarks met het aantal uitgevoerde \textit{µops} uit de simulatoroutput.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lrrrrrr}
+        \hline
+        Benchmark & uops/breedte & \(base_d\) & \(\Delta_d\) & \(base_c\) & \(\Delta_c\) \\
+        \hline
+        ED1   &  5.122,75 &  5.120,70 & \(-2,05\) &  5.098,46 & \(-24,29\) \\
+        STL2b & 50.242,50 & 50.240,14 & \(-2,36\) & 50.214,10 & \(-28,40\) \\
+        MCS   & 32.773,00 & 32.770,68 & \(-2,32\) & 32.755,49 & \(-17,51\) \\
+        MI    & 30.346,50 & 30.344,75 & \(-1,75\) & 30.331,26 & \(-15,24\) \\
+        DPcvt &  3.602,50 &  3.600,50 & \(-2,00\) &  3.583,47 & \(-19,03\) \\
+        EI    &  4.626,25 &  4.624,25 & \(-2,00\) &  4.622,21 &  \(-4,04\) \\
+        CCl   &  4.111,00 &  4.109,24 & \(-1,76\) &  4.097,22 & \(-13,78\) \\
+        \hline
+    \end{tabular}
+    \caption{Selectie van benchmarks. Alle waarden worden uitgedrukt in micro-operaties per dispatch-slot.}
+    \label{tab:invariant_base}
+\end{table}
+
+
 \subsection{Frontend stalls en Drained}
 \label{subsec:frontend stall}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
