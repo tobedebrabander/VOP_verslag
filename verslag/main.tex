@@ -427,7 +427,7 @@ Dit is zo omdat elke \textit{µop} steeds gedispatcht  wordt, en dus altijd een 
 \label{subsec:frontend stall}
 Het aantal cycli dat toegeschreven wordt aan de component \textit{frontend stall} is bijna uitsluitend afkomstig van \textit{I-cache misses}. Om deze component te verifiëren wordt er gekeken naar een \textit{microbenchmark} met veel \textit{I-cache misses}, waarbij het aantal herhalingen van de lus wordt opgeschaald.
 Een \textit{microbenchmark} is een klein programma dat één specifieke bottleneck van de \textit{OoO-pijplijn} uitbuit.
-Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} evenredig meeschaalt.
+Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{frontend stall} meeschaalt.
 
 De gebruikte benchmark bestaat uit een lange reeks bewerkingen op een variabele \texttt{t}, waarbij dezelfde reeks meerdere keren na elkaar is uitgeschreven. Hierdoor wordt de lus in machinecode fysiek groot genoeg om \textit{I-cache misses} te veroorzaken.
 \begin{lstlisting}[language=C]
@@ -455,13 +455,13 @@ Het analyseren van de benchmark voor verschillende aantal iteraties resulteert i
 \end{figure}
 
 Bij commit is het schaalgedrag niet zichtbaar. De \textit{frontend stalls} die bij dispatch zichtbaar zijn en schalen met het aantal \textit{I-cache misses} worden gemaskeerd bij commit.
-Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn. Dit is een argument voor het correct zijn van het totaal aantal \textit{backend stall} cycli. Niet of de cycli naar de correcte instructies gaan.
-Het correct zijn van de 3 andere componenten wordt in wat nu verder aangetoond.
+Dit maakt het verifiëren van de \textit{drained} component lastig. Er kan uiteindelijk geconcludeerd worden dat als de som van het totaal aantal geattribueerde cycli klopt en de drie andere componenten zijn correct, de \textit{drained} component ook correct zal zijn. Dit is een argument voor het correct zijn van het totaal aantal \textit{drained} cycli. Niet of de cycli naar de correcte instructies gaan.
+Het correct zijn van de drie andere componenten wordt in wat nu verder aangetoond.
 
 
 \subsection{Mispredictions}
 \label{subsec:mispredictions}
-Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel \textit{branch mispredictions}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
+Het aantal cycli dat toegeschreven wordt aan de component \textit{misprediction} is afkomstig van foute voorspellingen. Om deze component te verifiëren wordt er gekeken naar een benchmark met veel foutieve \textit{sprongvoorspellingen}, waarbij het aantal iteraties opnieuw wordt opgeschaald. Het verwachte resultaat is dat het aantal cycli toegeschreven aan \textit{branch misprediction} evenredig meeschaalt.
 
 De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie, waardoor er dus veel foute voorspellingen zullen zijn.
 \begin{lstlisting}[language=C]
@@ -497,7 +497,7 @@ De gebruikte benchmarks bestaat uit een lus met een willekeurige sprongconditie,
 
 Figuur \ref{fig:CCh_dispatch} toont het schaalgedrag van de microbenchmark bij dispatch. Het verwachte gedrag wordt hier duidelijk zichtbaar. Figuur \ref{fig:CCh_commit} toont het schaalgedrag van de microbenchmark bij commit. Wat opvalt is dat het aantal flushed cycli bij commit minder is dan bij dispatch. Dit is te wijten aan het feit dat de
 gevolgen van de mispredictions gemaskeerd worden onder \textit{backend stalls} bij commit (zie sectie \ref{dispatch}).
-In het algemeen zijn er 2 mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
+In het algemeen zijn er twee mogelijkheden hoe de gevolgen van mispredictions zichtbaar worden bij commit: ze worden niet of weinig gemaskeerd, waarvoor hier aangetoond werd dat het gedrag correct is.
 Of ze worden (bijna) volledig gemaskeerd waardoor het correcte gedrag van \textit{backend stalls} ervoor zorgt dat ook dit gedrag correct is.
 
 \subsection{Backend stall en stalled}
